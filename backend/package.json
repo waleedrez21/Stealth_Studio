@@ -1,0 +1,22 @@
+{
+  "name": "stealth-studio-api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node --test test/*.test.js",
+    "import:legacy": "node scripts/import-legacy.mjs"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "firebase-admin": "^13.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "multer": "^2.0.2",
+    "zod": "^3.25.0",
+    "helmet": "^8.1.0",
+    "express-rate-limit": "^8.1.0"
+  }
+}
