@@ -186,7 +186,7 @@ Rich text is stored as a versioned JSON document prefixed `stealth:rich:v1:` ins
 
 ## Script folders
 
-The library and shared drafts have First 10 Scripts, Engagement, Study Sim Scripts and General folders, plus an All scripts view. Coaches choose a folder in the Post to folder dropdown and can move drafts or published scripts by editing and saving. First 10 Scripts is a manually curated starter collection and displays its regular scripts in posted order, with urgent scripts first; it is not an automatic limit or a rolling list of the newest ten. Older records default to General. Firebase stores the folder ID directly on each script, and its existing live updates include folder moves. No Firestore migration or extra index is needed.
+The library and shared drafts have First 10 Scripts, Engagement, Study Sim Scripts and StealthGPT Scripts folders, plus an All scripts view. StealthGPT Scripts replaces the General display name; its stored ID remains `general` so existing records and links keep working. Inside this folder, coaches can assign the StealthGPT or Humanchatgpt subfolder using the editor dropdown. Both public scripts and shared drafts have matching subfolder navigation. Existing records without a subfolder remain in the parent folder; they are not automatically reclassified. Coaches choose a folder in the Post to folder dropdown and can move drafts or published scripts by editing and saving. First 10 Scripts is a manually curated starter collection and displays its regular scripts in posted order, with urgent scripts first; it is not an automatic limit or a rolling list of the newest ten. Older records default to the StealthGPT Scripts parent folder. Firebase stores the folder ID directly on each script, and its existing live updates include folder moves. No Firestore migration or extra index is needed.
 
 ## Reference videos
 
@@ -226,3 +226,7 @@ Cloudflare Pages can host the same frontend instead of Vercel. Build the root wo
 ## Potential videos — private coach ideas
 
 Potential videos is separate from script drafts. Coaches save a required http/https video link, optional title and formatted thoughts. All approved coaches can edit or delete ideas; stale changes are rejected. Ideas are stored in a separate Firestore `ideas` collection, never in public scripts or drafts. The list updates every 15 seconds without replacing unsaved thoughts. The existing closed Firestore rules also protect this collection; no extra index is required.
+
+## StealthGPT branding and subfolders
+
+The sidebar brand and favicon use the supplied original JPEG at frontend/public/stealthgpt-logo.jpeg. The title remains Stealth Studio. Subfolder IDs are `stealthgpt` and `humanchatgpt`; `subfolder` is empty when unassigned or outside the `general` parent. The backend validates the parent/subfolder combination, preserves omitted subfolder values on updates within the parent, and clears them when moving to another folder. Existing exports preserve the new field automatically. No Firestore indexes, rules or environment-variable changes are required.

@@ -2,7 +2,7 @@ import { cardSummary } from './sections';
 import ScriptText from './ScriptText';
 import ReferenceVideos from './ReferenceVideos';
 import FolderNav from './FolderNav';
-import { selectedFolder, folderId, folderName } from './folders';
+import { selectedFolder, folderId, subfolderId, folderHref, scriptFolderName } from './folders';
 import RichContent from './RichContent';
 import { plainText } from './rich-text.js';
 import { useEffect, useState, lazy, Suspense } from 'react';
@@ -83,7 +83,7 @@ function Card({
           )}
         </div>
       </div>
-      <span className="folder-label">{folderName(s.folder)}</span>
+      <span className="folder-label">{scriptFolderName(s.folder, s.subfolder)}</span>
       <h2>{s.title || 'Untitled script'}</h2>
       <p>{cardSummary(s) || (draft ? 'This script is a work in progress.' : '')}</p>
       {draft && <div className="draft-author">Last saved by {s.updatedBy || s.author}</div>}
@@ -99,11 +99,17 @@ function Card({
 }
 function Library() {
   const active = selectedFolder(new URLSearchParams(location.search).get('folder'));
+  const child =
+    active === 'general' ? subfolderId(new URLSearchParams(location.search).get('subfolder')) : '';
   const live = useRealtime('published');
   const { data, error, loading } = useLoad<Record[]>('/api/scripts', live.version);
   const records = data || [];
   const visible = (
-    active === 'all' ? [...records] : records.filter((s) => folderId(s.folder) === active)
+    active === 'all'
+      ? [...records]
+      : records.filter(
+          (s) => folderId(s.folder) === active && (!child || subfolderId(s.subfolder) === child),
+        )
   ).sort(
     (a, b) =>
       Number(b.urgent === true) - Number(a.urgent === true) ||
@@ -123,11 +129,11 @@ function Library() {
           {visible.length} {visible.length === 1 ? 'script' : 'scripts'}
         </span>
       </div>
-      <FolderNav records={records} active={active} />
+      <FolderNav records={records} active={active} child={child} />
       {active !== 'all' && (
         <div className="folder-selection">
-          <h2>{folderName(active)}</h2>
-          <a href={`/post?folder=${active}`}>Post to this folder</a>
+          <h2>{scriptFolderName(active, child)}</h2>
+          <a href={folderHref('/post', active, child)}>Post to this folder</a>
         </div>
       )}
       {error && (
@@ -182,11 +188,18 @@ function Library() {
 }
 function Drafts() {
   const active = selectedFolder(new URLSearchParams(location.search).get('folder'));
+  const child =
+    active === 'general' ? subfolderId(new URLSearchParams(location.search).get('subfolder')) : '';
   const { coach } = useSession();
   const live = useRealtime('draft', coach);
   const { data, error, loading } = useLoad<Record[]>('/api/drafts', live.version, coach);
   const records = data || [];
-  const visible = active === 'all' ? records : records.filter((s) => folderId(s.folder) === active);
+  const visible =
+    active === 'all'
+      ? records
+      : records.filter(
+          (s) => folderId(s.folder) === active && (!child || subfolderId(s.subfolder) === child),
+        );
   return (
     <CoachGate>
       <main className="library">
@@ -198,11 +211,11 @@ function Drafts() {
           </div>
           <span className="count">{visible.length} drafts</span>
         </div>
-        <FolderNav records={records} active={active} base="/drafts" />
+        <FolderNav records={records} active={active} child={child} base="/drafts" />
         {active !== 'all' && (
           <div className="folder-selection">
-            <h2>{folderName(active)}</h2>
-            <a href={`/post?folder=${active}`}>Start a draft here</a>
+            <h2>{scriptFolderName(active, child)}</h2>
+            <a href={folderHref('/post', active, child)}>Start a draft here</a>
           </div>
         )}
         {error && (
@@ -244,8 +257,11 @@ function Body({ s }: { s: Script }) {
     <>
       <ReferenceVideos references={s.references} />
       <RichContent className="reader-summary" value={s.summary} />
-      <a className="reader-folder" href={`/?folder=${folderId(s.folder)}`}>
-        {folderName(s.folder)}
+      <a
+        className="reader-folder"
+        href={folderHref('/', folderId(s.folder), subfolderId(s.subfolder))}
+      >
+        {scriptFolderName(s.folder, s.subfolder)}
       </a>
       <div className="script-body">
         {s.blocks.map((b, i) =>
@@ -353,6 +369,11 @@ function NewScript() {
     <CoachGate>
       <Editor
         initialFolder={folderId(new URLSearchParams(location.search).get('folder'))}
+        initialSubfolder={
+          folderId(new URLSearchParams(location.search).get('folder')) === 'general'
+            ? subfolderId(new URLSearchParams(location.search).get('subfolder'))
+            : ''
+        }
         author={user?.displayName || user?.email || 'Coach'}
       />
     </CoachGate>

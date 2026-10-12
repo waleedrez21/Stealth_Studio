@@ -1,4 +1,4 @@
-import { Clapperboard, Files, FilePenLine, Plus, LockKeyhole, Video } from 'lucide-react';
+import { Files, FilePenLine, Plus, LockKeyhole, Video } from 'lucide-react';
 import { useSession } from './session';
 export default function Shell({ children }: { children: React.ReactNode }) {
   const { user, coach, logout } = useSession();
@@ -9,7 +9,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
       <aside className="sidebar">
         <a href="/" className="brand">
           <span className="brandmark">
-            <Clapperboard size={21} />
+            <img src="/stealthgpt-logo.jpeg" alt="" />
           </span>
           Stealth Studio
         </a>

@@ -22,6 +22,7 @@ export const scriptInput = z
     notes: richText(5000),
     status: z.enum(['draft', 'published']),
     folder: z.enum(['general', 'first-10', 'engagement', 'study-sim']).default('general'),
+    subfolder: z.enum(['', 'stealthgpt', 'humanchatgpt']).optional(),
     urgent: z.boolean().optional(),
     references: z
       .array(
@@ -84,6 +85,8 @@ export const scriptInput = z
       .max(48),
   })
   .superRefine((s, ctx) => {
+    if (s.subfolder && s.folder !== 'general')
+      ctx.addIssue({ code: 'custom', message: 'Choose StealthGPT Scripts for this subfolder.' });
     if (
       s.status === 'published' &&
       (!s.title || !s.blocks.some((b) => b.type === 'image' || plainText(b.text).trim()))
@@ -112,6 +115,7 @@ export function nextRecord(existing, input, user, now) {
         status: 400,
       });
   }
+  const folder = input.folder ?? existing?.folder ?? 'general';
   return {
     ...existing,
     title: input.title || 'Untitled script',
@@ -119,7 +123,11 @@ export function nextRecord(existing, input, user, now) {
     notes: input.notes,
     blocks: input.blocks,
     status: input.status,
-    folder: input.folder ?? existing?.folder ?? 'general',
+    folder,
+    subfolder:
+      folder === 'general'
+        ? (input.subfolder ?? (existing?.folder === 'general' ? existing?.subfolder : '') ?? '')
+        : '',
     urgent: input.urgent ?? existing?.urgent ?? false,
     references: input.references ?? existing?.references ?? [],
     revision: existing ? existing.revision + 1 : 0,

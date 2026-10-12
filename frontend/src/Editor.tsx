@@ -4,7 +4,15 @@ import { templateBlocks, sectionHelp } from './sections';
 import ScriptText from './ScriptText';
 import ReferenceVideos, { type ReferenceVideo } from './ReferenceVideos';
 import ReferenceEditor from './ReferenceEditor';
-import { folders, folderId, folderName, type FolderId } from './folders';
+import {
+  folders,
+  folderId,
+  subfolders,
+  subfolderId,
+  scriptFolderName,
+  type FolderId,
+  type SubfolderId,
+} from './folders';
 import RichTextEditor from './RichTextEditor';
 import RichContent from './RichContent';
 import { plainText } from './rich-text.js';
@@ -24,6 +32,7 @@ type Draft = {
   notes: string;
   blocks: Block[];
   folder?: string;
+  subfolder?: string;
   urgent?: boolean;
   references?: ReferenceVideo[];
   revision: number;
@@ -33,16 +42,21 @@ export default function Editor({
   initial,
   mode = 'draft',
   initialFolder = 'general',
+  initialSubfolder = '',
 }: {
   author: string;
   initial?: Draft;
   mode?: 'draft' | 'published';
   initialFolder?: FolderId;
+  initialSubfolder?: SubfolderId;
 }) {
   const [references, setReferences] = useState<ReferenceVideo[]>(
     initial?.references?.length ? initial.references : [{ label: '', url: '' }],
   );
   const [folder, setFolder] = useState<FolderId>(folderId(initial?.folder || initialFolder));
+  const [subfolder, setSubfolder] = useState<SubfolderId>(
+    subfolderId(initial ? initial.subfolder : initialSubfolder),
+  );
   const [urgent, setUrgent] = useState(initial?.urgent === true);
   const [title, setTitle] = useState(initial?.title || '');
   const [summary, setSummary] = useState(initial?.summary || '');
@@ -113,6 +127,7 @@ export default function Editor({
             summary,
             notes,
             folder,
+            subfolder: folder === 'general' ? subfolder : '',
             urgent,
             references: references
               .map((r) => ({ label: r.label.trim(), url: r.url.trim() }))
@@ -196,7 +211,7 @@ export default function Editor({
       <form onSubmit={publish}>
         {preview ? (
           <div className="preview-paper">
-            <span className="folder-label">{folderName(folder)}</span>
+            <span className="folder-label">{scriptFolderName(folder, subfolder)}</span>
             {urgent && <span className="urgent-badge">Urgent · pinned when published</span>}
             <h2>{title || 'Untitled script'}</h2>
             <ReferenceVideos references={references} />
@@ -227,7 +242,10 @@ export default function Editor({
               <select
                 className="folder-select"
                 value={folder}
-                onChange={(e) => setFolder(folderId(e.target.value))}
+                onChange={(e) => {
+                  setFolder(folderId(e.target.value));
+                  setSubfolder('');
+                }}
               >
                 {folders.map((f) => (
                   <option key={f.id} value={f.id}>
@@ -236,6 +254,23 @@ export default function Editor({
                 ))}
               </select>
             </label>
+            {folder === 'general' && (
+              <label className="field">
+                Subfolder
+                <select
+                  className="folder-select"
+                  value={subfolder}
+                  onChange={(e) => setSubfolder(subfolderId(e.target.value))}
+                >
+                  <option value="">None — main StealthGPT Scripts folder</option>
+                  {subfolders.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
             <label className="field">
               Script title
               <input

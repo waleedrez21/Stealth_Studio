@@ -735,3 +735,88 @@ test('urgent scripts stay above newer regular scripts and Study Sim survives edi
     400,
   );
 });
+
+test('StealthGPT subfolders persist through edits, publication and moves without exposing drafts', async (t) => {
+  const { call } = await server(t);
+  let result = await call('/api/scripts', {
+    token: 'a',
+    method: 'POST',
+    body: { ...draft, folder: 'general', subfolder: 'humanchatgpt', urgent: true },
+  });
+  assert.equal(result.status, 201);
+  const id = result.data.id;
+  assert.equal((await call('/api/scripts/' + id)).status, 404);
+  let record = (await call('/api/scripts/' + id, { token: 'b' })).data;
+  assert.equal(record.subfolder, 'humanchatgpt');
+  // Saving from an older client preserves an assigned subfolder.
+  result = await call('/api/scripts/' + id, {
+    token: 'b',
+    method: 'PATCH',
+    body: { ...draft, folder: 'general', revision: 0 },
+  });
+  assert.equal(result.status, 200);
+  record = (await call('/api/scripts/' + id, { token: 'a' })).data;
+  assert.equal(record.subfolder, 'humanchatgpt');
+  assert.equal(record.urgent, true);
+  result = await call('/api/scripts/' + id, {
+    token: 'a',
+    method: 'PATCH',
+    body: {
+      ...draft,
+      folder: 'general',
+      subfolder: 'stealthgpt',
+      status: 'published',
+      revision: 1,
+    },
+  });
+  assert.equal(result.status, 200);
+  assert.equal((await call('/api/scripts')).data.find((s) => s.id === id).subfolder, 'stealthgpt');
+  // Stale edits cannot move a script back into another subfolder.
+  assert.equal(
+    (
+      await call('/api/scripts/' + id, {
+        token: 'b',
+        method: 'PATCH',
+        body: {
+          ...draft,
+          folder: 'general',
+          subfolder: 'humanchatgpt',
+          status: 'published',
+          revision: 1,
+        },
+      })
+    ).status,
+    409,
+  );
+  assert.equal(
+    (
+      await call('/api/scripts', {
+        token: 'a',
+        method: 'POST',
+        body: { ...draft, folder: 'study-sim', subfolder: 'stealthgpt' },
+      })
+    ).status,
+    400,
+  );
+  assert.equal(
+    (
+      await call('/api/scripts', {
+        token: 'a',
+        method: 'POST',
+        body: { ...draft, folder: 'general', subfolder: 'unknown' },
+      })
+    ).status,
+    400,
+  );
+  result = await call('/api/scripts/' + id, {
+    token: 'a',
+    method: 'PATCH',
+    body: { ...draft, folder: 'study-sim', status: 'published', revision: 2 },
+  });
+  assert.equal(result.status, 200);
+  record = (await call('/api/scripts/' + id)).data;
+  assert.equal(record.subfolder, '');
+  assert.equal(record.urgent, true);
+  const legacy = await call('/api/scripts', { token: 'a', method: 'POST', body: draft });
+  assert.equal((await call('/api/scripts/' + legacy.data.id, { token: 'a' })).data.subfolder, '');
+});

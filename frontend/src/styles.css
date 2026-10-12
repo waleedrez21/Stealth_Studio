@@ -1379,6 +1379,51 @@ figcaption .rich-content {
   flex-wrap: wrap;
   gap: 6px;
 }
+.brandmark:has(img) {
+  background: #000;
+  overflow: hidden;
+}
+.brandmark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.subfolder-nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: -12px 0 28px;
+  padding: 14px 16px;
+  border-left: 3px solid var(--border);
+  background: var(--panel);
+  border-radius: 0 10px 10px 0;
+}
+.subfolder-heading {
+  font-size: 13px;
+  color: var(--muted);
+}
+.subfolder-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--green);
+  text-decoration: none;
+  font-size: 13px;
+}
+.subfolder-link.active,
+.subfolder-link:hover {
+  background: #ead5be;
+  border-color: var(--green);
+}
+.subfolder-link:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 3px;
+}
 .urgent-badge {
   display: inline-flex;
   align-items: center;
