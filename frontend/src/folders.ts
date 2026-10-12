@@ -1,6 +1,7 @@
 export const folders = [
   { id: 'first-10', name: 'First 10 Scripts' },
   { id: 'engagement', name: 'Engagement' },
+  { id: 'study-sim', name: 'Study Sim Scripts' },
   { id: 'general', name: 'General' },
 ] as const;
 export type FolderId = (typeof folders)[number]['id'];

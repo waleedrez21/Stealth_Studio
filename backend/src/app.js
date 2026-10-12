@@ -4,10 +4,11 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import { scriptInput, detectMime, ideaInput } from './validation.js';
+import { approvedCoachEmail } from './coach-access.js';
 
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 
-export function createApp({ store, verifyToken, origins, coachEmails, rateLimits = true }) {
+export function createApp({ store, verifyToken, origins, coachEmails = [], rateLimits = true }) {
   const app = express();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
@@ -31,7 +32,7 @@ export function createApp({ store, verifyToken, origins, coachEmails, rateLimits
 
   // Authentication alone does not grant coach access. Both checks happen on the server.
   const isCoach = (u) =>
-    !!u && u.email_verified === true && coachEmails.includes((u.email || '').toLowerCase());
+    !!u && u.email_verified === true && approvedCoachEmail(u.email, coachEmails);
   async function identity(req, res, next) {
     const value = req.get('Authorization');
     req.user = null;
@@ -84,7 +85,7 @@ export function createApp({ store, verifyToken, origins, coachEmails, rateLimits
     res.json({
       authenticated: !!req.user,
       coach: isCoach(req.user),
-      approved: !!req.user && coachEmails.includes((req.user.email || '').toLowerCase()),
+      approved: !!req.user && approvedCoachEmail(req.user.email, coachEmails),
       email: req.user?.email || null,
     }),
   );
@@ -206,25 +207,21 @@ export function createApp({ store, verifyToken, origins, coachEmails, rateLimits
   app.use((error, req, res, next) => {
     if (res.headersSent) return next(error);
     if (error instanceof multer.MulterError)
-      return res
-        .status(400)
-        .json({
-          error:
-            error.code === 'LIMIT_FILE_SIZE'
-              ? 'Choose an image smaller than 5 MB.'
-              : 'Invalid image upload.',
-        });
+      return res.status(400).json({
+        error:
+          error.code === 'LIMIT_FILE_SIZE'
+            ? 'Choose an image smaller than 5 MB.'
+            : 'Invalid image upload.',
+      });
     if (error.type === 'entity.too.large')
       return res.status(413).json({ error: 'This script is too long.' });
     if (error instanceof SyntaxError && 'body' in error)
       return res.status(400).json({ error: 'Invalid request data.' });
     const status = error.status || 500;
     if (status >= 500) console.error('API operation failed', error.code || error.message);
-    res
-      .status(status)
-      .json({
-        error: status >= 500 ? 'Couldn’t complete this request. Please try again.' : error.message,
-      });
+    res.status(status).json({
+      error: status >= 500 ? 'Couldn’t complete this request. Please try again.' : error.message,
+    });
   });
   return app;
 }

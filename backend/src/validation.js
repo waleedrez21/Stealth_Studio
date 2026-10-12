@@ -21,7 +21,8 @@ export const scriptInput = z
     summary: richText(300).default(''),
     notes: richText(5000),
     status: z.enum(['draft', 'published']),
-    folder: z.enum(['general', 'first-10', 'engagement']).default('general'),
+    folder: z.enum(['general', 'first-10', 'engagement', 'study-sim']).default('general'),
+    urgent: z.boolean().optional(),
     references: z
       .array(
         z.object({
@@ -119,6 +120,7 @@ export function nextRecord(existing, input, user, now) {
     blocks: input.blocks,
     status: input.status,
     folder: input.folder ?? existing?.folder ?? 'general',
+    urgent: input.urgent ?? existing?.urgent ?? false,
     references: input.references ?? existing?.references ?? [],
     revision: existing ? existing.revision + 1 : 0,
     author: existing?.author || user.name || 'Coaching team',

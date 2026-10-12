@@ -52,10 +52,12 @@ export function firestoreStore(db, bucket) {
       const snap = await scripts.where('status', '==', status).get();
       return snap.docs
         .map((d) => ({ id: d.id, ...d.data() }))
-        .sort((a, b) =>
-          (status === 'draft' ? b.updatedAt : b.createdAt).localeCompare(
-            status === 'draft' ? a.updatedAt : a.createdAt,
-          ),
+        .sort(
+          (a, b) =>
+            (status === 'published' ? Number(b.urgent === true) - Number(a.urgent === true) : 0) ||
+            (status === 'draft' ? b.updatedAt : b.createdAt).localeCompare(
+              status === 'draft' ? a.updatedAt : a.createdAt,
+            ),
         );
     },
     async get(id) {
@@ -119,15 +121,13 @@ export function firestoreStore(db, bucket) {
         metadata: { contentType: mime, cacheControl: 'private, no-store' },
       });
       try {
-        await assets
-          .doc(id)
-          .create({
-            ownerId: user.uid,
-            mime,
-            size: buffer.length,
-            createdAt: new Date().toISOString(),
-            publishedScriptIds: [],
-          });
+        await assets.doc(id).create({
+          ownerId: user.uid,
+          mime,
+          size: buffer.length,
+          createdAt: new Date().toISOString(),
+          publishedScriptIds: [],
+        });
       } catch (e) {
         await file.delete().catch(() => {});
         throw e;

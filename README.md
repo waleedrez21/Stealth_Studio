@@ -21,7 +21,7 @@ You do not need a Railway PostgreSQL service for this version. Firestore is the 
 Open https://console.firebase.google.com and create your own project.
 
 1. Under Project settings → General, register a **Web app**. Copy `apiKey`, `authDomain`, `projectId` and `appId` from its Firebase configuration. Firebase Hosting is not required.
-2. Under Build → Authentication → Sign-in method, enable **Email/Password**. The login page uses email and password; there is no public registration page. You create each coach's account in Authentication → Users → Add user. Add their email to Railway's `COACH_EMAILS` to approve access. Coaches can use Set or reset password to choose their own password and must verify their email before posting. Google sign-in is not used by this edition.
+2. Under Build → Authentication → Sign-in method, enable **Email/Password**. The login page supports email/password sign-in and account creation for `@stealthgpt.ai` addresses. Verified accounts on that exact domain automatically receive coach access. For other emails, create an account in Authentication → Users → Add user and approve it in Railway's `COACH_EMAILS`. Coaches can use Set or reset password to choose their own password and must verify their email before posting. Google sign-in is not used by this edition.
 3. Under Authentication → Settings → Authorized domains, add **localhost** for local development. Later add the exact Vercel/custom website hostname, without `https://`. New Firebase projects may not include localhost automatically.
 4. Under Build → Firestore Database, create the default **Cloud Firestore** database. Choose the region appropriate for your team. Paste `firebase/firestore.rules` into its Rules tab and publish. The rules deny direct browser database access; the Railway API uses the Admin SDK and enforces permissions itself.
 5. Under Build → Storage, create a storage bucket. Copy the exact bucket name shown in the console, typically `your-project.firebasestorage.app`. Paste `firebase/storage.rules` into its Rules tab and publish. Keep these rules closed: image access goes through the API, including public images after publication.
@@ -53,7 +53,7 @@ Add these Railway variables:
 | `FIREBASE_PROJECT_ID` | Your Firebase project ID |
 | `FIREBASE_STORAGE_BUCKET` | Exact storage bucket name |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | Entire contents of the private service-account JSON, as one environment variable |
-| `COACH_EMAILS` | `waleed.shammarez21@gmail.com` initially; add other verified coach emails separated by commas |
+| `COACH_EMAILS` | `waleed.shammarez21@gmail.com` initially; add other external coach emails separated by commas. Verified `@stealthgpt.ai` accounts qualify automatically |
 | `FRONTEND_ORIGINS` | Your exact website origin, e.g. `https://stealth-studio.vercel.app` |
 
 Railway supplies `PORT`; the backend binds to that port on `0.0.0.0`. Apply/deploy variable changes. Once Firebase credentials and Firestore are working, `https://YOUR-RAILWAY-DOMAIN/health` should return `{"ok":true}`. This health endpoint verifies a database read.
@@ -161,7 +161,7 @@ It imports into the Firebase project in your backend configuration. Existing doc
 Run `npm test` for backend checks and `npm run build` for frontend checks/build.
 
 - **Firebase unauthorized domain:** add the frontend hostname (or localhost) to Authentication’s authorized domains.
-- **Coach access required:** use the right account, verify its email, and add it to Railway’s `COACH_EMAILS`; apply/redeploy backend variable changes.
+- **Coach access required:** verify the account email. Exact `@stealthgpt.ai` addresses qualify automatically; external addresses must be in Railway’s `COACH_EMAILS`. Apply/redeploy any backend variable changes.
 - **API connection/origin error:** check `VITE_API_URL`, Railway’s `FRONTEND_ORIGINS`, and `/health`.
 - **Image uploads fail:** check that Storage exists, its bucket name is correct, Blaze billing is enabled, and the backend service account has access.
 - **Live updates reconnecting:** check Railway is running and the API is reachable. Saved data remains in Firestore.
@@ -186,7 +186,7 @@ Rich text is stored as a versioned JSON document prefixed `stealth:rich:v1:` ins
 
 ## Script folders
 
-The library and shared drafts have First 10 Scripts, Engagement and General folders, plus an All scripts view. Coaches choose a folder in the Post to folder dropdown and can move drafts or published scripts by editing and saving. First 10 Scripts is a manually curated starter collection and displays its assigned scripts in posted order; it is not an automatic limit or a rolling list of the newest ten. Older records default to General. Firebase stores the folder ID directly on each script, and its existing live updates include folder moves. No Firestore migration or extra index is needed.
+The library and shared drafts have First 10 Scripts, Engagement, Study Sim Scripts and General folders, plus an All scripts view. Coaches choose a folder in the Post to folder dropdown and can move drafts or published scripts by editing and saving. First 10 Scripts is a manually curated starter collection and displays its regular scripts in posted order, with urgent scripts first; it is not an automatic limit or a rolling list of the newest ten. Older records default to General. Firebase stores the folder ID directly on each script, and its existing live updates include folder moves. No Firestore migration or extra index is needed.
 
 ## Reference videos
 
@@ -204,15 +204,20 @@ Audio has an optional http/https reference link and rich text instructions, plus
 
 Card description is optional, including in backend validation. Blank descriptions use a short excerpt from the Script section on cards. Divider lines separate populated sections and visuals in previews and published scripts. No database migration is needed.
 
-## Approve a coach
+## Coach accounts and approval
 
 1. Enable Email/Password in Firebase Authentication.
-2. In Firebase Authentication → Users, create their email/password account. Use a temporary random password; they can choose their own with Set or reset password on the login page.
-3. Add the exact email to Railway's comma-separated `COACH_EMAILS` and apply/deploy that variable change. Merely creating a Firebase account does not grant coach access.
-4. The coach clicks Post script, signs in, and verifies their email using the email verification controls if needed.
-5. Remove an email from `COACH_EMAILS` and deploy to revoke coach permissions; you can also disable the account in Firebase. Permission checks happen on the backend for every protected operation.
+2. Team members with an exact `@stealthgpt.ai` email click Post script → Create account, choose a password, and verify their mailbox. Verified team accounts receive coach access automatically; no Railway change is needed for each employee. Subdomains and lookalike domains do not qualify.
+3. For external coaches, create their email/password account in Firebase Authentication → Users and add the email to Railway's comma-separated `COACH_EMAILS`. Keep `waleed.shammarez21@gmail.com` there for the owner's existing account. External users can reset their passwords on the login page and must also verify their emails.
+4. To revoke a company-domain coach, disable their Firebase account; removing them from `COACH_EMAILS` does not revoke domain-based eligibility. For external coaches, remove their approved email and redeploy, or disable the account. Backend token verification checks revocation on protected requests.
 
-Anonymous visitors continue to read published scripts without signing in. Signed-in coaches can return directly to the editor without logging in again. This independent edition uses your Firebase accounts; the ChatGPT-hosted preview uses separate authentication until you deploy the independent edition.
+Anonymous visitors continue to read published scripts without signing in. All protected APIs require a valid, verified Firebase token and backend eligibility. Merely typing a company email or creating an unverified account grants no coach access. This independent edition uses Firebase authentication.
+
+## Urgent scripts
+
+Coaches can select Mark as urgent when creating or editing any script. It is stored as a boolean `urgent` on the script document. Published urgent scripts appear first in All scripts and each folder, with an Urgent badge; within that group the existing folder date order is preserved. First 10 Scripts uses oldest-first, other folders newest-first. Uncheck the option and save to unpin. Draft urgency is saved for later publication, but the draft stays private.
+
+Older documents without `urgent` behave as regular scripts. Updates that omit the field retain the existing value. No Firestore migration or additional index is required. The existing realtime subscription updates pin/unpin changes.
 
 ## Free frontend hosting alternative
 

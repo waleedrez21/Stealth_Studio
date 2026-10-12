@@ -42,7 +42,7 @@ export default function CoachGate({ children }: { children: React.ReactNode }) {
       <h1>{user ? 'Coach access required.' : 'Sign in to work on scripts.'}</h1>
       <p>
         {user
-          ? `Signed in as ${user.email}. Your verified email must be on the approved coach list.`
+          ? `Signed in as ${user.email}. Verify your @stealthgpt.ai email, or use an email approved by your coaching lead.`
           : 'Sign in as an approved coach to post scripts and work on your team’s drafts.'}
       </p>
       {user && !user.emailVerified && (

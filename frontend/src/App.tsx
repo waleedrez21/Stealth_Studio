@@ -6,7 +6,7 @@ import { selectedFolder, folderId, folderName } from './folders';
 import RichContent from './RichContent';
 import { plainText } from './rich-text.js';
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { FileText, CalendarDays, FilePenLine } from 'lucide-react';
+import { FileText, CalendarDays, FilePenLine, Pin } from 'lucide-react';
 import Shell from './Shell';
 import { api } from './api';
 import { samples, dateLabel, type Script } from './data';
@@ -67,13 +67,21 @@ function Card({
         <span className="file-icon">
           {draft ? <FilePenLine size={22} /> : <FileText size={22} />}
         </span>
-        {draft ? (
-          <span className="sample-tag">DRAFT</span>
-        ) : s.sample ? (
-          <span className="sample-tag">SAMPLE</span>
-        ) : (
-          <NewBadge date={s.createdAt} />
-        )}
+        <div className="card-badges">
+          {!draft && s.urgent && (
+            <span className="urgent-badge">
+              <Pin size={12} />
+              URGENT
+            </span>
+          )}
+          {draft ? (
+            <span className="sample-tag">DRAFT</span>
+          ) : s.sample ? (
+            <span className="sample-tag">SAMPLE</span>
+          ) : (
+            <NewBadge date={s.createdAt} />
+          )}
+        </div>
       </div>
       <span className="folder-label">{folderName(s.folder)}</span>
       <h2>{s.title || 'Untitled script'}</h2>
@@ -94,8 +102,15 @@ function Library() {
   const live = useRealtime('published');
   const { data, error, loading } = useLoad<Record[]>('/api/scripts', live.version);
   const records = data || [];
-  const visible = active === 'all' ? records : records.filter((s) => folderId(s.folder) === active);
-  if (active === 'first-10') visible.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+  const visible = (
+    active === 'all' ? [...records] : records.filter((s) => folderId(s.folder) === active)
+  ).sort(
+    (a, b) =>
+      Number(b.urgent === true) - Number(a.urgent === true) ||
+      (active === 'first-10'
+        ? a.createdAt.localeCompare(b.createdAt)
+        : b.createdAt.localeCompare(a.createdAt)),
+  );
   return (
     <main className="library">
       <div className="page-heading">
@@ -288,6 +303,12 @@ function Reader({ id }: { id: string }) {
             )}
           </div>
           <h1>{s.title}</h1>
+          {s.urgent && (
+            <span className="urgent-badge">
+              <Pin size={14} />
+              Urgent · pinned
+            </span>
+          )}
           <div className="byline">
             Posted {dateLabel(s.createdAt)} <span>·</span>
             {s.author}

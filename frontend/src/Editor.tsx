@@ -24,6 +24,7 @@ type Draft = {
   notes: string;
   blocks: Block[];
   folder?: string;
+  urgent?: boolean;
   references?: ReferenceVideo[];
   revision: number;
 };
@@ -42,6 +43,7 @@ export default function Editor({
     initial?.references?.length ? initial.references : [{ label: '', url: '' }],
   );
   const [folder, setFolder] = useState<FolderId>(folderId(initial?.folder || initialFolder));
+  const [urgent, setUrgent] = useState(initial?.urgent === true);
   const [title, setTitle] = useState(initial?.title || '');
   const [summary, setSummary] = useState(initial?.summary || '');
   const [notes, setNotes] = useState(initial?.notes || '');
@@ -111,6 +113,7 @@ export default function Editor({
             summary,
             notes,
             folder,
+            urgent,
             references: references
               .map((r) => ({ label: r.label.trim(), url: r.url.trim() }))
               .filter((r) => r.label || r.url),
@@ -194,6 +197,7 @@ export default function Editor({
         {preview ? (
           <div className="preview-paper">
             <span className="folder-label">{folderName(folder)}</span>
+            {urgent && <span className="urgent-badge">Urgent · pinned when published</span>}
             <h2>{title || 'Untitled script'}</h2>
             <ReferenceVideos references={references} />
             <RichContent value={summary} />
@@ -241,6 +245,19 @@ export default function Editor({
                 required
                 placeholder="Give your script a clear title"
               />
+            </label>
+            <label className="urgent-option">
+              <input
+                type="checkbox"
+                checked={urgent}
+                onChange={(e) => setUrgent(e.target.checked)}
+              />
+              <span>
+                <strong>Mark as urgent</strong>
+                <span className="field-help">
+                  Pin this script above regular scripts when published. Uncheck to unpin it.
+                </span>
+              </span>
             </label>
             <ReferenceEditor value={references} onChange={setReferences} />
             <div className="field">

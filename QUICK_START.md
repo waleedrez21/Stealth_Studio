@@ -6,6 +6,6 @@
 4. Vercel: deploy `frontend` using Vite, build `npm run build`, output `dist`; fill in its five `VITE_*` values.
 5. Put Vercel’s origin into Railway’s `FRONTEND_ORIGINS` and its hostname into Firebase Authentication’s Authorized domains. Apply variable changes and redeploy.
 6. Optional: import the included original-site snapshot with `npm run import:legacy --workspace backend` after configuring local backend credentials.
-7. Create coach accounts in Firebase Users and approve their emails in Railway COACH_EMAILS, then sign in with email/password using Post script → Coach login and test saving, publishing, editing, deletion and image privacy.
+7. Team coaches can create accounts on the login page using @stealthgpt.ai and must verify their email. For external coaches, create accounts in Firebase Users and approve their emails in Railway COACH_EMAILS. Test saving, publishing, urgent pin/unpin, Study Sim folders, editing, deletion and image privacy.
 
 Read README.md for exact values, local commands and verification steps. Firebase Storage requires Blaze billing. This package has no ChatGPT/OpenAI dependency.

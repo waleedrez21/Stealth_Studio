@@ -10,6 +10,10 @@ const users = {
   b: { uid: 'coach-b', email: 'b@example.com', email_verified: true, name: 'Coach B' },
   outsider: { uid: 'other', email: 'other@example.com', email_verified: true },
   unverified: { uid: 'unverified', email: 'a@example.com', email_verified: false },
+  team: { uid: 'team', email: 'Coach@StealthGPT.ai', email_verified: true },
+  teamPending: { uid: 'pending', email: 'coach@stealthgpt.ai', email_verified: false },
+  similarDomain: { uid: 'similar', email: 'coach@stealthgpt.ai.evil.com', email_verified: true },
+  subdomain: { uid: 'subdomain', email: 'coach@team.stealthgpt.ai', email_verified: true },
 };
 async function server(t) {
   const fake = fakeFirebase();
@@ -48,7 +52,7 @@ async function server(t) {
     });
     return { status: r.status, data: await r.json().catch(() => null) };
   }
-  return { base, call, store };
+  return { base, call, store, db: fake.db };
 }
 const draft = {
   title: 'Shared draft',
@@ -611,5 +615,123 @@ test('video ideas are private, shared, separate from drafts, and protected from 
       })
     ).status,
     409,
+  );
+});
+
+test('company coaches require verified tokens before accessing any private workspace', async (t) => {
+  const { call } = await server(t);
+  const team = (await call('/api/me', { token: 'team' })).data;
+  assert.equal(team.approved, true);
+  assert.equal(team.coach, true);
+  const pending = (await call('/api/me', { token: 'teamPending' })).data;
+  assert.equal(pending.approved, true);
+  assert.equal(pending.coach, false);
+  for (const token of ['teamPending', 'similarDomain', 'subdomain', 'outsider']) {
+    assert.equal((await call('/api/drafts', { token })).status, 403);
+    assert.equal((await call('/api/ideas', { token })).status, 403);
+    assert.equal((await call('/api/scripts', { token, method: 'POST', body: draft })).status, 403);
+  }
+  assert.equal((await call('/api/drafts', { token: 'team' })).status, 200);
+  assert.equal((await call('/api/ideas', { token: 'team' })).status, 200);
+  const saved = await call('/api/scripts', { token: 'team', method: 'POST', body: draft });
+  assert.equal(saved.status, 201);
+  assert.equal((await call('/api/scripts/' + saved.data.id)).status, 404);
+  const shared = await call('/api/scripts/' + saved.data.id, { token: 'a' });
+  assert.equal(shared.status, 200);
+  assert.equal(
+    (
+      await call('/api/scripts/' + saved.data.id, {
+        token: 'team',
+        method: 'PATCH',
+        body: { ...draft, status: 'published', revision: 0 },
+      })
+    ).status,
+    200,
+  );
+  assert.equal((await call('/api/scripts/' + saved.data.id)).status, 200);
+});
+
+test('urgent scripts stay above newer regular scripts and Study Sim survives editing', async (t) => {
+  const { call, db } = await server(t);
+  const regularId = '10000000-0000-4000-8000-000000000001';
+  const urgentId = '10000000-0000-4000-8000-000000000002';
+  const urgentDraftId = '10000000-0000-4000-8000-000000000003';
+  await db.runTransaction(async (tx) => {
+    tx.set(
+      db.collection('scripts').doc(regularId),
+      nextRecord(
+        null,
+        { ...draft, status: 'published', folder: 'study-sim' },
+        users.a,
+        '2026-10-12T12:00:00Z',
+      ),
+    );
+    tx.set(
+      db.collection('scripts').doc(urgentId),
+      nextRecord(
+        null,
+        { ...draft, status: 'published', folder: 'study-sim', urgent: true },
+        users.a,
+        '2026-10-01T12:00:00Z',
+      ),
+    );
+    tx.set(
+      db.collection('scripts').doc(urgentDraftId),
+      nextRecord(null, { ...draft, urgent: true }, users.a, '2026-10-12T13:00:00Z'),
+    );
+  });
+  let scripts = (await call('/api/scripts')).data;
+  assert.deepEqual(
+    scripts.map((s) => s.id),
+    [urgentId, regularId],
+  );
+  assert.equal(scripts[0].folder, 'study-sim');
+  // Older clients that omit urgency must not silently unpin an existing script.
+  assert.equal(
+    (
+      await call('/api/scripts/' + urgentId, {
+        token: 'a',
+        method: 'PATCH',
+        body: { ...draft, status: 'published', folder: 'study-sim', revision: 0 },
+      })
+    ).status,
+    200,
+  );
+  assert.equal((await call('/api/scripts/' + urgentId)).data.urgent, true);
+  assert.equal(
+    (
+      await call('/api/scripts/' + urgentId, {
+        token: 'b',
+        method: 'PATCH',
+        body: { ...draft, status: 'published', folder: 'study-sim', urgent: false, revision: 1 },
+      })
+    ).status,
+    200,
+  );
+  scripts = (await call('/api/scripts')).data;
+  assert.deepEqual(
+    scripts.map((s) => s.id),
+    [regularId, urgentId],
+  );
+  const studyDraft = await call('/api/scripts', {
+    token: 'team',
+    method: 'POST',
+    body: { ...draft, folder: 'study-sim', urgent: true },
+  });
+  assert.equal(studyDraft.status, 201);
+  assert.equal((await call('/api/scripts/' + studyDraft.data.id)).status, 404);
+  assert.equal(
+    (await call('/api/scripts/' + studyDraft.data.id, { token: 'a' })).data.folder,
+    'study-sim',
+  );
+  assert.equal(
+    (
+      await call('/api/scripts', {
+        token: 'team',
+        method: 'POST',
+        body: { ...draft, urgent: 'yes' },
+      })
+    ).status,
+    400,
   );
 });

@@ -13,6 +13,7 @@ export type Script = {
   createdAt: string;
   sample?: boolean;
   folder?: string;
+  urgent?: boolean;
   references?: { label: string; url: string }[];
   revision?: number;
 };
