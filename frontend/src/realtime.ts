@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { API, authHeaders } from './api';
-export function useRealtime(scope: 'published' | 'draft', enabled = true) {
+export function useRealtime(scope: 'published' | 'draft' | 'archived', enabled = true) {
   const [version, setVersion] = useState(0);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState('');

@@ -2054,3 +2054,30 @@ textarea,
     flex-wrap: wrap;
   }
 }
+
+/* Card actions stay separate from the link, including on touch screens. */
+.script-card-wrap { position: relative; min-width: 0; }
+.script-card-wrap > .script-card { height: 100%; }
+.has-card-menu .card-badges { margin-right: 42px; }
+.script-card-menu { position: absolute; top: 24px; right: 18px; z-index: 2; }
+.script-card-menu[open] { z-index: 5; }
+.script-card-menu summary {
+  display: grid; place-items: center; width: 44px; height: 44px;
+  cursor: pointer; border-radius: 8px; color: var(--text); list-style: none;
+}
+.script-card-menu summary::-webkit-details-marker { display: none; }
+.script-card-menu summary:hover, .script-card-menu[open] summary { background: var(--bg); }
+.script-card-menu summary:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+.script-card-dropdown {
+  position: absolute; right: 0; top: 48px; width: 205px; padding: 7px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 9px;
+  box-shadow: 0 8px 24px #55352126;
+}
+.script-card-dropdown button {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px;
+  padding: 10px; border: 0; background: transparent; color: inherit;
+  text-align: left; cursor: pointer; border-radius: 6px; font: inherit;
+}
+.script-card-dropdown button:hover { background: var(--bg); }
+.script-card-dropdown button:disabled { cursor: wait; opacity: .6; }
+.script-card-dropdown p { padding: 6px; margin: 0; font-size: 13px; }

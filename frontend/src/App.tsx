@@ -17,12 +17,13 @@ import Login from './Login';
 import ScriptActions from './ScriptActions';
 import ImageRef from './Images';
 import NewBadge from './NewBadge';
+import ScriptCardMenu from './ScriptCardMenu';
 const Editor = lazy(() => import('./Editor'));
 const PotentialVideos = lazy(() => import('./PotentialVideos'));
 const ideaRequest = (path: string, options: RequestInit = {}) =>
   api(path, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
 type Record = Script & {
-  status: 'draft' | 'published';
+  status: 'draft' | 'published' | 'archived';
   revision: number;
   updatedAt: string;
   updatedBy?: string;
@@ -57,24 +58,33 @@ function useLoad<T>(path: string, version = 0, enabled = true) {
 function Card({
   s,
   draft = false,
+  archived = false,
+  onPinChange = () => {},
 }: {
   s: Script & { updatedAt?: string; updatedBy?: string };
   draft?: boolean;
+  archived?: boolean;
+  onPinChange?: () => void;
 }) {
+  const { coach } = useSession();
+  const canPin = coach && !draft && !archived && !s.sample;
   return (
+    <div className={canPin ? 'script-card-wrap has-card-menu' : 'script-card-wrap'}>
     <a className="script-card" href={draft ? `/drafts/${s.id}` : `/scripts/${s.id}`}>
       <div className="card-top">
         <span className="file-icon">
           {draft ? <FilePenLine size={22} /> : <FileText size={22} />}
         </span>
         <div className="card-badges">
-          {!draft && s.urgent && (
+          {!draft && !archived && s.urgent && (
             <span className="urgent-badge">
               <Pin size={12} />
               URGENT
             </span>
           )}
-          {draft ? (
+          {archived ? (
+            <span className="sample-tag">ARCHIVED</span>
+          ) : draft ? (
             <span className="sample-tag">DRAFT</span>
           ) : s.sample ? (
             <span className="sample-tag">SAMPLE</span>
@@ -95,14 +105,17 @@ function Card({
         <span className="open-label">{draft ? 'Edit draft' : 'Read script'}</span>
       </div>
     </a>
+    {canPin && <ScriptCardMenu script={s} onChange={onPinChange} />}
+    </div>
   );
 }
 function Library() {
+  const [pinVersion, setPinVersion] = useState(0);
   const active = selectedFolder(new URLSearchParams(location.search).get('folder'));
   const child =
     active === 'general' ? subfolderId(new URLSearchParams(location.search).get('subfolder')) : '';
   const live = useRealtime('published');
-  const { data, error, loading } = useLoad<Record[]>('/api/scripts', live.version);
+  const { data, error, loading } = useLoad<Record[]>('/api/scripts', live.version + pinVersion);
   const records = data || [];
   const visible = (
     active === 'all'
@@ -147,7 +160,7 @@ function Library() {
       ) : !error && visible.length ? (
         <div className="grid">
           {visible.map((s) => (
-            <Card key={s.id} s={s} />
+            <Card key={s.id} s={s} onPinChange={() => setPinVersion(v => v + 1)} />
           ))}
         </div>
       ) : !error && active !== 'all' ? (
@@ -252,6 +265,27 @@ function Drafts() {
     </CoachGate>
   );
 }
+function ArchiveLibrary() {
+  const { coach } = useSession();
+  const live = useRealtime('archived', coach);
+  const { data, error, loading } = useLoad<Record[]>('/api/archive', live.version, coach);
+  const active = selectedFolder(new URLSearchParams(location.search).get('folder'));
+  const child = active === 'general' ? subfolderId(new URLSearchParams(location.search).get('subfolder')) : '';
+  const records = data || [];
+  const visible = records.filter(s => active === 'all' || (folderId(s.folder) === active && (!child || subfolderId(s.subfolder) === child)));
+  return <CoachGate><main className="library">
+    <div className="page-heading"><div>
+      <div className="eyebrow">COACH WORKSPACE</div>
+      <h1>Archived scripts</h1>
+      <p>Old scripts, saved for later. Open a script to restore it.</p>
+    </div><span className="count">{visible.length} archived</span></div>
+    <FolderNav records={records} active={active} child={child} base="/archive" />
+    {error && <p className="notice error" role="alert">{error}</p>}
+    {live.error && <p className="realtime-notice">{live.error}</p>}
+    {loading ? <p>Loading archive…</p> : visible.length ? <div className="grid">{visible.map(s => <Card key={s.id} s={s} archived />)}</div> : !error ? <div className="empty-banner"><FileText size={24}/><div><strong>No archived scripts here.</strong><p>Open a published script and choose Archive script to save it here.</p></div></div> : null}
+    <p className="draft-privacy">Archived scripts are visible only to approved coaches. Restoring a published script makes it public again.</p>
+  </main></CoachGate>;
+}
 function Body({ s }: { s: Script }) {
   return (
     <>
@@ -289,15 +323,16 @@ function Body({ s }: { s: Script }) {
   );
 }
 function Reader({ id }: { id: string }) {
+  const { coach } = useSession();
+  const archiveLive = useRealtime('archived', coach);
   const sample = samples.find((s) => s.id === id);
   const live = useRealtime('published', !sample);
-  const { data, error, loading } = useLoad<Record>(`/api/scripts/${id}`, live.version, !sample);
-  const { coach } = useSession();
+  const { data, error, loading } = useLoad<Record>(`/api/scripts/${id}`, live.version + archiveLive.version, !sample);
   const s = sample || data;
   return (
     <main className="reader">
-      <a className="back" href="/">
-        Back to scripts
+      <a className="back" href={data?.status === 'archived' ? '/archive' : '/'}>
+        {data?.status === 'archived' ? 'Back to archive' : 'Back to scripts'}
       </a>
       {!sample && error ? (
         <p className="notice error" role="alert">
@@ -314,12 +349,15 @@ function Reader({ id }: { id: string }) {
                 id={s.id}
                 title={s.title}
                 revision={s.revision || 0}
-                editHref={`/scripts/${id}/edit`}
+                editHref={data?.status === 'archived' ? undefined : `/scripts/${id}/edit`}
+                archived={data?.status === 'archived'}
+                afterDelete={data?.status === 'archived' ? '/archive' : '/'}
               />
             )}
           </div>
+          {data?.status === 'archived' && <p className="notice">Archived · visible only to coaches. Restore this script before editing it.</p>}
           <h1>{s.title}</h1>
-          {s.urgent && (
+          {s.urgent && data?.status !== 'archived' && (
             <span className="urgent-badge">
               <Pin size={14} />
               Urgent · pinned
@@ -384,6 +422,7 @@ export default function App() {
   let page: React.ReactNode;
   if (path === '/') page = <Library />;
   else if (path === '/drafts') page = <Drafts />;
+  else if (path === '/archive') page = <ArchiveLibrary />;
   else if (path === '/ideas')
     page = (
       <CoachGate>

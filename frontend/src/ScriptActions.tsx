@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Archive, ArchiveRestore } from 'lucide-react';
 import { api } from './api';
 export default function ScriptActions({
   id,
@@ -8,6 +8,7 @@ export default function ScriptActions({
   editHref,
   afterDelete = '/',
   disabled = false,
+  archived,
 }: {
   id: string;
   title: string;
@@ -15,10 +16,27 @@ export default function ScriptActions({
   editHref?: string;
   afterDelete?: string;
   disabled?: boolean;
+  archived?: boolean;
 }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [archiveError, setArchiveError] = useState('');
+  async function changeArchive() {
+    setBusy(true);
+    setArchiveError('');
+    try {
+      const result = await api<{status: string}>(`/api/scripts/${id}/archive`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revision, archived: !archived }),
+      });
+      location.assign(archived ? result.status === 'draft' ? `/drafts/${id}` : `/scripts/${id}` : '/archive');
+    } catch (e) {
+      setArchiveError(e instanceof Error ? e.message : 'Couldn’t update the archive. Try again.');
+      setBusy(false);
+    }
+  }
   async function remove() {
     setBusy(true);
     setError('');
@@ -36,6 +54,13 @@ export default function ScriptActions({
   }
   return (
     <div className="script-actions">
+      {archived !== undefined && (
+        <button type="button" className="secondary" disabled={disabled || busy} onClick={changeArchive}>
+          {archived ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+          {busy ? 'Saving…' : archived ? 'Restore script' : 'Archive script'}
+        </button>
+      )}
+      {archiveError && <p className="notice error" role="alert">{archiveError}</p>}
       {editHref && (
         <a className="secondary" href={editHref}>
           <Pencil size={16} />
@@ -45,7 +70,7 @@ export default function ScriptActions({
       <button
         className="delete-button"
         type="button"
-        disabled={disabled}
+        disabled={disabled || busy}
         onClick={() => {
           setError('');
           dialog.current?.showModal();

@@ -116,12 +116,29 @@ export function createApp({ store, verifyToken, origins, coachEmails = [], rateL
   app.get('/api/drafts', coach, async (req, res) =>
     res.json((await store.list('draft')).map((s) => output(s, true))),
   );
+  app.get('/api/archive', coach, async (req, res) =>
+    res.json((await store.list('archived')).map((s) => output(s, true))),
+  );
+  app.patch('/api/scripts/:id/pin', coach, writes, async (req, res) => {
+    if (!uuid.test(req.params.id) || typeof req.body?.urgent !== 'boolean' ||
+        !Number.isInteger(req.body?.revision) || req.body.revision < 0)
+      return res.status(400).json({ error: 'Reload the script before pinning it.' });
+    const record = await store.setPinned(req.params.id, req.body.urgent, req.body.revision, req.user);
+    res.json({ id: record.id, urgent: record.urgent, revision: record.revision });
+  });
+  app.patch('/api/scripts/:id/archive', coach, writes, async (req, res) => {
+    if (!uuid.test(req.params.id) || typeof req.body?.archived !== 'boolean' ||
+        !Number.isInteger(req.body?.revision) || req.body.revision < 0)
+      return res.status(400).json({ error: 'Reload the script before archiving or restoring it.' });
+    const record = await store.setArchived(req.params.id, req.body.archived, req.body.revision, req.user);
+    res.json({ id: record.id, status: record.status, revision: record.revision });
+  });
   app.get('/api/scripts/:id', async (req, res) => {
     if (!uuid.test(req.params.id)) return res.status(404).json({ error: 'Script not found.' });
     const s = await store.get(req.params.id);
-    if (!s || s.status === 'deleted' || (s.status === 'draft' && !isCoach(req.user)))
+    if (!s || s.status === 'deleted' || (s.status !== 'published' && !isCoach(req.user)))
       return res.status(404).json({ error: 'Script not found.' });
-    res.json(output(s, s.status === 'draft'));
+    res.json(output(s, s.status !== 'published'));
   });
   async function save(req, res) {
     const parsed = scriptInput.safeParse(req.body);
@@ -169,8 +186,8 @@ export function createApp({ store, verifyToken, origins, coachEmails = [], rateL
     stream.pipe(res);
   });
   app.get('/api/events', async (req, res) => {
-    const scope = req.query.scope === 'draft' ? 'draft' : 'published';
-    if (scope === 'draft' && !isCoach(req.user))
+    const scope = ['draft', 'archived'].includes(req.query.scope) ? req.query.scope : 'published';
+    if (scope !== 'published' && !isCoach(req.user))
       return res.status(req.user ? 403 : 401).json({ error: 'Coach access required.' });
     res.set({
       'Content-Type': 'text/event-stream',

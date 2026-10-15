@@ -55,8 +55,8 @@ export function firestoreStore(db, bucket) {
         .sort(
           (a, b) =>
             (status === 'published' ? Number(b.urgent === true) - Number(a.urgent === true) : 0) ||
-            (status === 'draft' ? b.updatedAt : b.createdAt).localeCompare(
-              status === 'draft' ? a.updatedAt : a.createdAt,
+            (status !== 'published' ? b.updatedAt : b.createdAt).localeCompare(
+              status !== 'published' ? a.updatedAt : a.createdAt,
             ),
         );
     },
@@ -69,6 +69,8 @@ export function firestoreStore(db, bucket) {
       return db.runTransaction(async (tx) => {
         const snap = await tx.get(ref);
         const old = snap.exists ? snap.data() : null;
+        if (old?.status === 'archived')
+          throw Object.assign(new Error('Restore this script before editing it.'), { status: 409 });
         if (id && !old)
           throw Object.assign(new Error('This script is unavailable.'), { status: 409 });
         const record = nextRecord(old, input, user, new Date().toISOString());
@@ -89,6 +91,52 @@ export function firestoreStore(db, bucket) {
         }
         tx.set(ref, record);
         return { id: ref.id, ...record };
+      });
+    },
+    async setPinned(id, urgent, revision, user) {
+      return db.runTransaction(async (tx) => {
+        const ref = scripts.doc(id);
+        const snap = await tx.get(ref);
+        const old = snap.exists ? snap.data() : null;
+        assertRevision(old, revision);
+        if (old.status !== 'published')
+          throw Object.assign(new Error('Only published scripts can be pinned. Reload the library.'), { status: 409 });
+        const record = {
+          ...old, urgent, revision: old.revision + 1,
+          updatedAt: new Date().toISOString(), updatedBy: user.name || user.email,
+        };
+        tx.set(ref, record);
+        return { id, ...record };
+      });
+    },
+    async setArchived(id, archived, revision, user) {
+      return db.runTransaction(async (tx) => {
+        const ref = scripts.doc(id);
+        const snap = await tx.get(ref);
+        const old = snap.exists ? snap.data() : null;
+        assertRevision(old, revision);
+        if (archived === (old.status === 'archived'))
+          throw Object.assign(new Error('This script has changed. Reload it and try again.'), { status: 409 });
+        const status = archived ? 'archived' : old.archivePreviousStatus === 'draft' ? 'draft' : 'published';
+        const refs = imageIds(old).map((id) => assets.doc(id));
+        const images = refs.length ? await tx.getAll(...refs) : [];
+        images.forEach((image, i) => {
+          if (!image.exists)
+            throw Object.assign(new Error('An image is unavailable. No changes were saved.'), { status: 409 });
+          const published = new Set(image.data().publishedScriptIds || []);
+          published.delete(id);
+          if (status === 'published') published.add(id);
+          tx.update(refs[i], { publishedScriptIds: [...published] });
+        });
+        const now = new Date().toISOString();
+        const record = {
+          ...old, status, revision: old.revision + 1, updatedAt: now,
+          updatedBy: user.name || user.email,
+          archivePreviousStatus: archived ? old.status : old.archivePreviousStatus || 'published',
+          archivedAt: archived ? now : null,
+        };
+        tx.set(ref, record);
+        return { id, ...record };
       });
     },
     async remove(id, revision, user) {

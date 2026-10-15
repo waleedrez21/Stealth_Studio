@@ -1,8 +1,9 @@
-import { Files, FilePenLine, Plus, LockKeyhole, Video } from 'lucide-react';
+import { Files, FilePenLine, Plus, LockKeyhole, Video, Archive } from 'lucide-react';
 import { useSession } from './session';
 export default function Shell({ children }: { children: React.ReactNode }) {
   const { user, coach, logout } = useSession();
   const drafts = location.pathname.startsWith('/drafts');
+  const archive = location.pathname.startsWith('/archive');
   const ideas = location.pathname.startsWith('/ideas');
   return (
     <div className="shell">
@@ -14,9 +15,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           Stealth Studio
         </a>
         <div className="side-label">CREATOR WORKSPACE</div>
-        <a className={drafts || ideas ? 'nav' : 'nav active'} href="/">
+        <a className={drafts || ideas || archive ? 'nav' : 'nav active'} href="/">
           <Files size={19} />
-          Scripts{!drafts && !ideas && <span className="nav-marker" />}
+          Scripts{!drafts && !ideas && !archive && <span className="nav-marker" />}
         </a>
         <a className={drafts ? 'nav active' : 'nav'} href="/drafts">
           <FilePenLine size={19} />
@@ -26,6 +27,9 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           <Video size={19} />
           Potential videos
         </a>
+        {coach && <a className={archive ? 'nav active' : 'nav'} href="/archive">
+          <Archive size={19} />Archived scripts
+        </a>}
         <div className="side-bottom">
           <LockKeyhole size={18} />
           <div>
@@ -43,7 +47,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <header className="topbar">
           <span className="breadcrumb">
             Workspace <span>/</span>
-            <strong>{ideas ? 'Potential videos' : drafts ? 'Drafts' : 'Scripts'}</strong>
+            <strong>{archive ? 'Archive' : ideas ? 'Potential videos' : drafts ? 'Drafts' : 'Scripts'}</strong>
           </span>
           <div className="header-actions">
             {user && (

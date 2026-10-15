@@ -820,3 +820,76 @@ test('StealthGPT subfolders persist through edits, publication and moves without
   const legacy = await call('/api/scripts', { token: 'a', method: 'POST', body: draft });
   assert.equal((await call('/api/scripts/' + legacy.data.id, { token: 'a' })).data.subfolder, '');
 });
+
+test('archive is private, preserves scripts and images, restores visibility and rejects stale edits', async (t) => {
+  const { call, store, base } = await server(t);
+  const image = await store.upload(Buffer.from([137,80,78,71,13,10,26,10]), 'image/png', users.a);
+  const input = {...draft, status:'published', folder:'general', subfolder:'stealthgpt', urgent:true,
+    blocks:[...draft.blocks,{type:'image',assetId:image.id,caption:'Keep this image'}]};
+  const created = await call('/api/scripts',{token:'a',method:'POST',body:input});
+  const id = created.data.id;
+  const original = (await call('/api/scripts/'+id)).data;
+  for (const token of [undefined,'outsider','unverified']) {
+    assert.ok([401,403].includes((await call('/api/archive',{token})).status));
+    assert.ok([401,403].includes((await call('/api/scripts/'+id+'/archive',{token,method:'PATCH',body:{archived:true,revision:0}})).status));
+    assert.ok([401,403].includes((await fetch(base+'/api/events?scope=archived',{headers:token?{Authorization:'Bearer '+token}:{}})).status));
+  }
+  assert.equal((await call('/api/scripts/'+id+'/archive',{token:'a',method:'PATCH',body:{archived:'yes',revision:0}})).status,400);
+  assert.equal((await call('/api/scripts/'+id+'/archive',{token:'a',method:'PATCH',body:{archived:true,revision:0}})).status,200);
+  assert.equal((await call('/api/scripts')).data.length,0);
+  assert.equal((await call('/api/scripts/'+id)).status,404);
+  assert.equal((await call('/api/scripts/'+id,{token:'outsider'})).status,404);
+  assert.equal((await fetch(base+'/api/images/'+image.id)).status,404);
+  assert.equal((await fetch(base+'/api/images/'+image.id,{headers:{Authorization:'Bearer b'}})).status,200);
+  const archived = (await call('/api/archive',{token:'b'})).data[0];
+  assert.equal(archived.id,id);
+  assert.equal(archived.status,'archived');
+  assert.deepEqual(archived.blocks,original.blocks);
+  assert.equal(archived.createdAt,original.createdAt);
+  assert.equal(archived.subfolder,'stealthgpt');
+  assert.equal(archived.urgent,true);
+  assert.equal((await call('/api/scripts/'+id,{token:'b',method:'PATCH',body:{...input,revision:1}})).status,409);
+  assert.equal((await call('/api/scripts/'+id+'/archive',{token:'b',method:'PATCH',body:{archived:false,revision:0}})).status,409);
+  assert.equal((await call('/api/scripts/'+id+'/archive',{token:'b',method:'PATCH',body:{archived:false,revision:1}})).status,200);
+  const restored = (await call('/api/scripts/'+id)).data;
+  assert.equal(restored.createdAt,original.createdAt);
+  assert.deepEqual(restored.blocks,original.blocks);
+  assert.equal((await fetch(base+'/api/images/'+image.id)).status,200);
+  assert.equal((await call('/api/archive',{token:'a'})).data.length,0);
+  // An image shared by another published script stays public when one copy is archived.
+  const shared = await call('/api/scripts',{token:'a',method:'POST',body:input});
+  await call('/api/scripts/'+id+'/archive',{token:'a',method:'PATCH',body:{archived:true,revision:2}});
+  assert.equal((await fetch(base+'/api/images/'+image.id)).status,200);
+  assert.equal((await call('/api/scripts/'+id,{token:'a',method:'DELETE',body:{revision:3}})).status,200);
+  assert.equal((await call('/api/scripts/'+id+'/archive',{token:'a',method:'PATCH',body:{archived:false,revision:4}})).status,409);
+  assert.equal((await call('/api/scripts/'+shared.data.id)).status,200);
+  const savedDraft = await call('/api/scripts',{token:'a',method:'POST',body:draft});
+  await call('/api/scripts/'+savedDraft.data.id+'/archive',{token:'a',method:'PATCH',body:{archived:true,revision:0}});
+  const draftRestore = await call('/api/scripts/'+savedDraft.data.id+'/archive',{token:'a',method:'PATCH',body:{archived:false,revision:1}});
+  assert.equal(draftRestore.data.status,'draft');
+  assert.equal((await call('/api/scripts/'+savedDraft.data.id)).status,404);
+});
+
+test('quick pin requires a coach and current revision, preserves content and sorts immediately', async (t) => {
+  const { call, store } = await server(t);
+  const created = await call('/api/scripts',{token:'a',method:'POST',body:{...draft,status:'published',folder:'study-sim'}});
+  const id = created.data.id;
+  const path = '/api/scripts/'+id+'/pin';
+  const original = await store.get(id);
+  for (const token of [undefined,'outsider','unverified'])
+    assert.ok([401,403].includes((await call(path,{token,method:'PATCH',body:{urgent:true,revision:0}})).status));
+  assert.equal((await call(path,{token:'b',method:'PATCH',body:{urgent:'yes',revision:0}})).status,400);
+  assert.equal((await call(path,{token:'b',method:'PATCH',body:{urgent:true}})).status,400);
+  const newer = await call('/api/scripts',{token:'a',method:'POST',body:{...draft,status:'published',title:'Newer'}});
+  assert.equal((await call(path,{token:'b',method:'PATCH',body:{urgent:true,revision:0}})).status,200);
+  const pinned = await store.get(id);
+  for (const field of ['blocks','createdAt','folder','subfolder','references','notes','title','summary','authorId','status'])
+    assert.deepEqual(pinned[field],original[field]);
+  assert.equal(pinned.urgent,true);
+  assert.equal((await call('/api/scripts')).data[0].id,id);
+  assert.equal((await call(path,{token:'a',method:'PATCH',body:{urgent:false,revision:0}})).status,409);
+  assert.equal((await call(path,{token:'a',method:'PATCH',body:{urgent:false,revision:1}})).status,200);
+  assert.equal((await call('/api/scripts')).data[0].id,newer.data.id);
+  await call('/api/scripts/'+id+'/archive',{token:'a',method:'PATCH',body:{archived:true,revision:2}});
+  assert.equal((await call(path,{token:'a',method:'PATCH',body:{urgent:true,revision:3}})).status,409);
+});
