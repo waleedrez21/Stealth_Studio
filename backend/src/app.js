@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import { scriptInput, detectMime, ideaInput } from './validation.js';
 import { approvedCoachEmail } from './coach-access.js';
+import { folderDescriptionInput } from './folder-guidance.js';
 
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 
@@ -90,6 +91,15 @@ export function createApp({ store, verifyToken, origins, coachEmails = [], rateL
     }),
   );
   app.get('/api/ideas', coach, async (req, res) => res.json(await store.listIdeas()));
+  app.get('/api/folders/study-sim/description', async (req, res) =>
+    res.json(await store.getFolderDescription()),
+  );
+  app.patch('/api/folders/study-sim/description', coach, writes, async (req, res) => {
+    const parsed = folderDescriptionInput.safeParse(req.body);
+    if (!parsed.success)
+      return res.status(400).json({ error: parsed.error.issues[0]?.message || 'Check the description.' });
+    res.json(await store.saveFolderDescription(parsed.data, req.user));
+  });
   async function saveIdea(req, res) {
     const parsed = ideaInput.safeParse(req.body);
     if (!parsed.success)

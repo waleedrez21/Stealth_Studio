@@ -1,5 +1,5 @@
 export const folders = [
-  { id: 'first-10', name: 'First 10 Scripts' },
+  { id: 'first-10', name: 'First 10 scripts' },
   { id: 'engagement', name: 'Engagement' },
   { id: 'study-sim', name: 'Study Sim Scripts' },
   { id: 'general', name: 'StealthGPT Scripts' },

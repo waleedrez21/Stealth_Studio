@@ -2,6 +2,7 @@ import { cardSummary } from './sections';
 import ScriptText from './ScriptText';
 import ReferenceVideos from './ReferenceVideos';
 import FolderNav from './FolderNav';
+import StudySimGuidance from './StudySimGuidance';
 import { selectedFolder, folderId, subfolderId, folderHref, scriptFolderName } from './folders';
 import RichContent from './RichContent';
 import { plainText } from './rich-text.js';
@@ -28,18 +29,31 @@ type Record = Script & {
   updatedAt: string;
   updatedBy?: string;
 };
-function useLoad<T>(path: string, version = 0, enabled = true) {
+function useLoad<T>(path: string, version = 0, enabled = true, autoRefresh = false) {
+  const [refreshVersion, setRefreshVersion] = useState(0);
+  const refresh = () => setRefreshVersion(v => v + 1);
+  useEffect(() => {
+    if (!enabled || !autoRefresh) return;
+    const refreshVisible = () => { if (document.visibilityState === 'visible') refresh(); };
+    const timer = setInterval(refreshVisible, 30000);
+    window.addEventListener('focus', refreshVisible);
+    document.addEventListener('visibilitychange', refreshVisible);
+    return () => { clearInterval(timer); window.removeEventListener('focus', refreshVisible); document.removeEventListener('visibilitychange', refreshVisible); };
+  }, [enabled, autoRefresh]);
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     if (!enabled) {
+      setData(null);
       setLoading(false);
       return;
     }
     let cancelled = false;
     setError('');
-    api<T>(path)
+    setLoading(true);
+    const controller = new AbortController();
+    api<T>(path, { signal: controller.signal })
       .then((value) => {
         if (!cancelled) setData(value);
       })
@@ -51,9 +65,10 @@ function useLoad<T>(path: string, version = 0, enabled = true) {
       });
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [path, version, enabled]);
-  return { data, error, loading };
+  }, [path, version, enabled, refreshVersion]);
+  return { data, error, loading: loading && !data, refreshing: loading, refresh };
 }
 function Card({
   s,
@@ -149,6 +164,7 @@ function Library() {
           <a href={folderHref('/post', active, child)}>Post to this folder</a>
         </div>
       )}
+      {active === 'study-sim' && <StudySimGuidance editable />}
       {error && (
         <p className="notice error" role="alert">
           {error} <button onClick={() => location.reload()}>Try again</button>
@@ -205,7 +221,7 @@ function Drafts() {
     active === 'general' ? subfolderId(new URLSearchParams(location.search).get('subfolder')) : '';
   const { coach } = useSession();
   const live = useRealtime('draft', coach);
-  const { data, error, loading } = useLoad<Record[]>('/api/drafts', live.version, coach);
+  const { data, error, loading, refreshing, refresh } = useLoad<Record[]>('/api/drafts', live.version, coach, true);
   const records = data || [];
   const visible =
     active === 'all'
@@ -220,11 +236,16 @@ function Drafts() {
           <div>
             <div className="eyebrow">COACH WORKSPACE</div>
             <h1>Script drafts</h1>
-            <p>A shared space to shape scripts before they go live.</p>
+            <p>Saved drafts from every coach, in one shared workspace.</p>
           </div>
-          <span className="count">{visible.length} drafts</span>
+          <div className="draft-list-tools">
+            <span className="count">{visible.length} of {records.length} team drafts</span>
+            <button type="button" className="secondary" disabled={refreshing} onClick={refresh}>{refreshing ? 'Refreshing…' : 'Refresh drafts'}</button>
+          </div>
         </div>
         <FolderNav records={records} active={active} child={child} base="/drafts" />
+        {active !== 'all' && <p className="draft-filter-notice">Showing drafts in {scriptFolderName(active, child)}. <a href="/drafts">Show all team drafts</a></p>}
+        {active === 'study-sim' && <StudySimGuidance />}
         {active !== 'all' && (
           <div className="folder-selection">
             <h2>{scriptFolderName(active, child)}</h2>
@@ -249,8 +270,8 @@ function Drafts() {
           <div className="empty-banner">
             <FilePenLine size={24} />
             <div>
-              <strong>No drafts here yet.</strong>
-              <p>Start a script and choose Save draft. Every approved coach can help edit it.</p>
+              <strong>{active === 'all' ? 'No saved team drafts yet.' : 'No drafts in this folder.'}</strong>
+              <p>Choose Save shared draft in the editor to share a script with every approved coach. Unsaved edits stay in the editor.</p>
               <a className="button" href="/post" style={{ marginTop: 14 }}>
                 Create a script
               </a>
@@ -289,6 +310,7 @@ function ArchiveLibrary() {
 function Body({ s }: { s: Script }) {
   return (
     <>
+      {folderId(s.folder) === 'study-sim' && <StudySimGuidance />}
       <ReferenceVideos references={s.references} />
       <RichContent className="reader-summary" value={s.summary} />
       <a

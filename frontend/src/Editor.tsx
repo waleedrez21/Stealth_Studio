@@ -1,5 +1,6 @@
 'use client';
 import AudioEditor from './AudioEditor';
+import StudySimGuidance from './StudySimGuidance';
 import { templateBlocks, sectionHelp } from './sections';
 import ScriptText from './ScriptText';
 import ReferenceVideos, { type ReferenceVideo } from './ReferenceVideos';
@@ -71,6 +72,7 @@ export default function Editor({
   const [draftId, setDraftId] = useState(initial?.id);
   const [revision, setRevision] = useState(initial?.revision);
   const [saved, setSaved] = useState('');
+  useEffect(() => { setSaved(''); }, [title, summary, notes, folder, subfolder, urgent, references, blocks]);
   const file = useRef<HTMLInputElement>(null);
   const [outdated, setOutdated] = useState(false);
   const live = useRealtime(mode === 'published' ? 'published' : 'draft', !!draftId);
@@ -144,7 +146,7 @@ export default function Editor({
       }
       setDraftId(result.id);
       setRevision(result.revision);
-      setSaved('Draft saved. Your coaching team can now work on it.');
+      setSaved('Saved to shared drafts. Every approved coach can open and edit this script.');
       history.replaceState(null, '', `/drafts/${result.id}`);
     } catch (e) {
       setError(
@@ -208,6 +210,7 @@ export default function Editor({
           to compare before saving.
         </p>
       )}
+      {folder === 'study-sim' && <StudySimGuidance />}
       <form onSubmit={publish}>
         {preview ? (
           <div className="preview-paper">
@@ -452,7 +455,7 @@ export default function Editor({
                 disabled={busy || uploading}
                 onClick={() => save('draft')}
               >
-                {busy ? 'Saving…' : 'Save draft'}
+                {busy ? 'Saving…' : 'Save shared draft'}
               </button>
             )}
             <button className="button" type="submit" disabled={busy || uploading}>

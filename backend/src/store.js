@@ -1,11 +1,35 @@
 import { randomUUID } from 'node:crypto';
 import { nextRecord, assertRevision, imageIds } from './validation.js';
+import { studySimDescription } from './folder-guidance.js';
 
 export function firestoreStore(db, bucket) {
   const scripts = db.collection('scripts');
   const assets = db.collection('assets');
   const ideas = db.collection('ideas');
+  const folderDescriptions = db.collection('folderDescriptions');
   return {
+    async getFolderDescription() {
+      const snap = await folderDescriptions.doc('study-sim').get();
+      const value = snap.exists ? snap.data() : null;
+      return { description: value?.description ?? studySimDescription, revision: value?.revision ?? 0 };
+    },
+    async saveFolderDescription(input, user) {
+      return db.runTransaction(async (tx) => {
+        const ref = folderDescriptions.doc('study-sim');
+        const snap = await tx.get(ref);
+        const old = snap.exists ? snap.data() : null;
+        if ((old?.revision ?? 0) !== input.revision)
+          throw Object.assign(new Error('Another coach updated this description. Reload it before saving.'), { status: 409 });
+        const record = {
+          description: input.description,
+          revision: (old?.revision ?? 0) + 1,
+          updatedAt: new Date().toISOString(),
+          updatedBy: user.uid,
+        };
+        tx.set(ref, record);
+        return { description: record.description, revision: record.revision };
+      });
+    },
     async listIdeas() {
       const snap = await ideas.where('status', '==', 'active').get();
       return snap.docs

@@ -893,3 +893,41 @@ test('quick pin requires a coach and current revision, preserves content and sor
   await call('/api/scripts/'+id+'/archive',{token:'a',method:'PATCH',body:{archived:true,revision:2}});
   assert.equal((await call(path,{token:'a',method:'PATCH',body:{urgent:true,revision:3}})).status,409);
 });
+
+test('saved drafts from different authors are listed and editable by the whole verified coach team', async (t) => {
+  const { call } = await server(t);
+  const a = await call('/api/scripts', { token:'a', method:'POST', body:{...draft,title:'Coach A draft',folder:'study-sim'} });
+  const b = await call('/api/scripts', { token:'b', method:'POST', body:{...draft,title:'Coach B draft',folder:'general',subfolder:'humanchatgpt'} });
+  assert.equal(a.status,201); assert.equal(b.status,201);
+  for (const token of ['a','b','team']) {
+    const all = await call('/api/drafts',{token});
+    assert.equal(all.status,200);
+    assert.deepEqual(new Set(all.data.map(s=>s.id)),new Set([a.data.id,b.data.id]));
+    for (const id of [a.data.id,b.data.id]) assert.equal((await call('/api/scripts/'+id,{token})).status,200);
+  }
+  assert.equal((await call('/api/scripts')).data.length,0);
+  assert.equal((await call('/api/drafts')).status,401);
+  assert.equal((await call('/api/drafts',{token:'outsider'})).status,403);
+  const other = (await call('/api/scripts/'+a.data.id,{token:'b'})).data;
+  assert.equal((await call('/api/scripts/'+a.data.id,{token:'b',method:'PATCH',body:{...other,title:'Edited by coach B'}})).status,200);
+  assert.equal((await call('/api/drafts',{token:'team'})).data.find(s=>s.id===a.data.id).title,'Edited by coach B');
+});
+
+test('Study Sim folder descriptions are public, shared, validated and protected from stale saves', async (t) => {
+  const { call } = await server(t);
+  const path='/api/folders/study-sim/description';
+  const initial=await call(path);
+  assert.equal(initial.status,200);
+  assert.match(initial.data.description,/Study Sim only/);
+  assert.equal(initial.data.revision,0);
+  for (const token of [undefined,'outsider','unverified'])
+    assert.ok([401,403].includes((await call(path,{token,method:'PATCH',body:{description:'Changed',revision:0}})).status));
+  for (const body of [{description:'x'.repeat(1001),revision:0},{description:'Missing revision'},{description:'Bad revision',revision:-1}])
+    assert.equal((await call(path,{token:'a',method:'PATCH',body})).status,400);
+  const saved=await call(path,{token:'a',method:'PATCH',body:{description:'Promote Study Sim only. Keep flashcards and study tools with Study Sim.',revision:0}});
+  assert.equal(saved.status,200); assert.equal(saved.data.revision,1);
+  assert.deepEqual((await call(path)).data,saved.data);
+  assert.equal((await call(path,{token:'b',method:'PATCH',body:{description:'Stale edit',revision:0}})).status,409);
+  assert.equal((await call(path,{token:'b',method:'PATCH',body:{description:'Updated by another coach',revision:1}})).status,200);
+  assert.deepEqual(Object.keys((await call(path)).data).sort(),['description','revision']);
+});

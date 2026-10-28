@@ -2081,3 +2081,19 @@ textarea,
 .script-card-dropdown button:hover { background: var(--bg); }
 .script-card-dropdown button:disabled { cursor: wait; opacity: .6; }
 .script-card-dropdown p { padding: 6px; margin: 0; font-size: 13px; }
+
+.study-sim-guidance {
+  padding: 18px 20px; margin: 0 0 24px;
+  border: 1px solid var(--border); border-left: 4px solid var(--green);
+  border-radius: 8px; background: var(--panel);
+}
+.study-sim-guidance strong { color: var(--green); }
+.study-sim-guidance p { margin: 8px 0; line-height: 1.55; }
+.study-sim-guidance .folder-description { white-space: pre-wrap; overflow-wrap: anywhere; }
+.folder-description-editor { margin-top: 12px; }
+.folder-description-editor label { display: block; margin-bottom: 8px; font-weight: 600; }
+.folder-description-editor textarea { width: 100%; resize: vertical; margin-bottom: 12px; min-height: 90px; padding: 12px; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--border); border-radius: 6px; }
+.draft-list-tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.draft-filter-notice { margin: 0 0 20px; }
+.draft-filter-notice a { text-decoration: underline; font-weight: 600; }
+@media (max-width: 600px) { .draft-list-tools { margin-top: 12px; } }
