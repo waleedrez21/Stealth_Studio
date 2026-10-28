@@ -1,6 +1,6 @@
 'use client';
 import AudioEditor from './AudioEditor';
-import StudySimGuidance from './StudySimGuidance';
+import FolderDescription from './FolderDescription';
 import { templateBlocks, sectionHelp } from './sections';
 import ScriptText from './ScriptText';
 import ReferenceVideos, { type ReferenceVideo } from './ReferenceVideos';
@@ -210,7 +210,7 @@ export default function Editor({
           to compare before saving.
         </p>
       )}
-      {folder === 'study-sim' && <StudySimGuidance />}
+      <FolderDescription folder={folder} subfolder={subfolder} />
       <form onSubmit={publish}>
         {preview ? (
           <div className="preview-paper">

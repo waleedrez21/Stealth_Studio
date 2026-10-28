@@ -931,3 +931,31 @@ test('Study Sim folder descriptions are public, shared, validated and protected 
   assert.equal((await call(path,{token:'b',method:'PATCH',body:{description:'Updated by another coach',revision:1}})).status,200);
   assert.deepEqual(Object.keys((await call(path)).data).sort(),['description','revision']);
 });
+
+test('every folder and subfolder has independent coach-editable descriptions without changing Study Sim', async (t) => {
+  const { call } = await server(t);
+  const ids = ['first-10','engagement','study-sim','general','general--stealthgpt','general--humanchatgpt'];
+  const studyPath = '/api/folders/study-sim/description';
+  await call(studyPath,{token:'a',method:'PATCH',body:{description:'Keep Josh’s existing description',revision:0}});
+  for (const id of ids.filter(id=>id!=='study-sim')) {
+    const path='/api/folders/'+id+'/description';
+    assert.deepEqual((await call(path)).data,{description:'',revision:0});
+    assert.equal((await call(path,{token:'outsider',method:'PATCH',body:{description:'No',revision:0}})).status,403);
+    const result=await call(path,{token:'b',method:'PATCH',body:{description:'Guidance for '+id,revision:0}});
+    assert.equal(result.status,200);
+    assert.deepEqual((await call(path)).data,{description:'Guidance for '+id,revision:1});
+    assert.equal((await call(path,{token:'a',method:'PATCH',body:{description:'Stale',revision:0}})).status,409);
+  }
+  assert.equal((await call(studyPath)).data.description,'Keep Josh’s existing description');
+  const parent=(await call('/api/folders/general/description')).data;
+  assert.equal(parent.description,'Guidance for general');
+  const child='/api/folders/general--stealthgpt/description';
+  assert.equal((await call(child,{token:'a',method:'PATCH',body:{description:'',revision:1}})).status,200);
+  assert.equal((await call(child)).data.description,'');
+  assert.deepEqual((await call('/api/folders/general/description')).data,parent);
+  for(const id of ['unknown','all','study-sim--stealthgpt']) {
+    const path='/api/folders/'+id+'/description';
+    assert.equal((await call(path)).status,404);
+    assert.equal((await call(path,{token:'a',method:'PATCH',body:{description:'Invalid',revision:0}})).status,404);
+  }
+});

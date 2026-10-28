@@ -2,7 +2,7 @@ import { cardSummary } from './sections';
 import ScriptText from './ScriptText';
 import ReferenceVideos from './ReferenceVideos';
 import FolderNav from './FolderNav';
-import StudySimGuidance from './StudySimGuidance';
+import FolderDescription from './FolderDescription';
 import { selectedFolder, folderId, subfolderId, folderHref, scriptFolderName } from './folders';
 import RichContent from './RichContent';
 import { plainText } from './rich-text.js';
@@ -164,7 +164,7 @@ function Library() {
           <a href={folderHref('/post', active, child)}>Post to this folder</a>
         </div>
       )}
-      {active === 'study-sim' && <StudySimGuidance editable />}
+      {active !== 'all' && <FolderDescription folder={active} subfolder={child} editable />}
       {error && (
         <p className="notice error" role="alert">
           {error} <button onClick={() => location.reload()}>Try again</button>
@@ -245,13 +245,13 @@ function Drafts() {
         </div>
         <FolderNav records={records} active={active} child={child} base="/drafts" />
         {active !== 'all' && <p className="draft-filter-notice">Showing drafts in {scriptFolderName(active, child)}. <a href="/drafts">Show all team drafts</a></p>}
-        {active === 'study-sim' && <StudySimGuidance />}
         {active !== 'all' && (
           <div className="folder-selection">
             <h2>{scriptFolderName(active, child)}</h2>
             <a href={folderHref('/post', active, child)}>Start a draft here</a>
           </div>
         )}
+        {active !== 'all' && <FolderDescription folder={active} subfolder={child} editable />}
         {error && (
           <p className="notice error" role="alert">
             {error}
@@ -301,6 +301,10 @@ function ArchiveLibrary() {
       <p>Old scripts, saved for later. Open a script to restore it.</p>
     </div><span className="count">{visible.length} archived</span></div>
     <FolderNav records={records} active={active} child={child} base="/archive" />
+    {active !== 'all' && <>
+      <div className="folder-selection"><h2>{scriptFolderName(active, child)}</h2></div>
+      <FolderDescription folder={active} subfolder={child} editable />
+    </>}
     {error && <p className="notice error" role="alert">{error}</p>}
     {live.error && <p className="realtime-notice">{live.error}</p>}
     {loading ? <p>Loading archive…</p> : visible.length ? <div className="grid">{visible.map(s => <Card key={s.id} s={s} archived />)}</div> : !error ? <div className="empty-banner"><FileText size={24}/><div><strong>No archived scripts here.</strong><p>Open a published script and choose Archive script to save it here.</p></div></div> : null}
@@ -310,7 +314,7 @@ function ArchiveLibrary() {
 function Body({ s }: { s: Script }) {
   return (
     <>
-      {folderId(s.folder) === 'study-sim' && <StudySimGuidance />}
+      <FolderDescription folder={folderId(s.folder)} subfolder={subfolderId(s.subfolder)} />
       <ReferenceVideos references={s.references} />
       <RichContent className="reader-summary" value={s.summary} />
       <a

@@ -8,14 +8,14 @@ export function firestoreStore(db, bucket) {
   const ideas = db.collection('ideas');
   const folderDescriptions = db.collection('folderDescriptions');
   return {
-    async getFolderDescription() {
-      const snap = await folderDescriptions.doc('study-sim').get();
+    async getFolderDescription(folder = 'study-sim') {
+      const snap = await folderDescriptions.doc(folder).get();
       const value = snap.exists ? snap.data() : null;
-      return { description: value?.description ?? studySimDescription, revision: value?.revision ?? 0 };
+      return { description: value?.description ?? (folder === 'study-sim' ? studySimDescription : ''), revision: value?.revision ?? 0 };
     },
-    async saveFolderDescription(input, user) {
+    async saveFolderDescription(input, user, folder = 'study-sim') {
       return db.runTransaction(async (tx) => {
-        const ref = folderDescriptions.doc('study-sim');
+        const ref = folderDescriptions.doc(folder);
         const snap = await tx.get(ref);
         const old = snap.exists ? snap.data() : null;
         if ((old?.revision ?? 0) !== input.revision)
