@@ -2097,3 +2097,9 @@ textarea,
 .draft-filter-notice { margin: 0 0 20px; }
 .draft-filter-notice a { text-decoration: underline; font-weight: 600; }
 @media (max-width: 600px) { .draft-list-tools { margin-top: 12px; } }
+
+.editor-fields { border: 0; padding: 0; margin: 0; min-width: 0; }
+.autosave-status { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 0 0 18px; font-size: 13px; color: var(--muted); }
+.autosave-saved { color: var(--green); }
+.autosave-error, .autosave-conflict { color: #963c27; }
+.autosave-error-detail { flex-basis: 100%; }

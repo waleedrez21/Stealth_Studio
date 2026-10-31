@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createHash } from 'node:crypto';
 import { nextRecord, assertRevision, imageIds } from './validation.js';
 import { studySimDescription } from './folder-guidance.js';
 
@@ -89,15 +89,26 @@ export function firestoreStore(db, bucket) {
       return s.exists ? { id: s.id, ...s.data() } : null;
     },
     async save(id, input, user) {
-      const ref = scripts.doc(id || randomUUID());
+      const ref = scripts.doc(id || input.creationId || randomUUID());
+      const fingerprint = createHash('sha256').update(JSON.stringify(input)).digest('hex');
       return db.runTransaction(async (tx) => {
         const snap = await tx.get(ref);
         const old = snap.exists ? snap.data() : null;
+        // A dropped response can be retried without creating another draft or applying a save twice.
+        if (input.requestId && old?.lastSave?.requestId === input.requestId &&
+            old.lastSave.authorId === user.uid && old.lastSave.fingerprint === fingerprint &&
+            old.lastSave.revision === old.revision)
+          return { id: ref.id, ...old };
+        if (!id && old)
+          throw Object.assign(new Error('This draft already exists or has changed. Open it before saving again.'), { status: 409 });
         if (old?.status === 'archived')
           throw Object.assign(new Error('Restore this script before editing it.'), { status: 409 });
         if (id && !old)
           throw Object.assign(new Error('This script is unavailable.'), { status: 409 });
         const record = nextRecord(old, input, user, new Date().toISOString());
+        if (input.requestId) record.lastSave = {
+          requestId: input.requestId, authorId: user.uid, fingerprint, revision: record.revision,
+        };
         // Update image visibility in the same transaction as the script.
         // Include previous images so removed images lose this published reference.
         const ids = [...new Set([...imageIds(old), ...imageIds(record)])];

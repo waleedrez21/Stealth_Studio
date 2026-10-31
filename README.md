@@ -101,6 +101,11 @@ Use a stable production domain for authentication and API access. Preview deploy
 
 Editing is collaboration through saved revisions, **not simultaneous Google Docs-style typing**. If another coach saves while you are editing, the editor warns you and offers the latest version in a new tab. It never replaces your unsaved text automatically.
 
+The editor autosaves after a two-second typing pause and periodically during continuous typing. New scripts become shared drafts after meaningful content is entered; Publish script is still an explicit action. Editing a published script autosaves to the published version. Saving status appears above the editor, and the existing buttons can save immediately. Pending uploads pause autosave. Network failures retry the same request, and the browser warns before leaving with unsaved changes. Edits are not backed up to local storage.
+
+Each editor serializes its writes using the last acknowledged revision. A newer coach revision pauses autosave and leaves the local text available for comparison. Retried POST/PATCH saves use request IDs; the backend acknowledges an identical request once and rejects replays after another edit, pin, archive or deletion. Request metadata is omitted from API reads. Write limits are per verified coach so coaches on the same network do not block each other. No new environment variables or Firebase rules are needed.
+
+
 ## How information updates
 
 Coaches save changes through the Railway API. The API verifies the Firebase ID token, verifies the email and coach allowlist, and stores the change in Firestore. Saves and deletes use Firestore transactions to protect revisions and image visibility together.

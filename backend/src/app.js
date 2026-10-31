@@ -57,6 +57,7 @@ export function createApp({ store, verifyToken, origins, coachEmails = [], rateL
     ? rateLimit({
         windowMs: 60 * 1000,
         limit: 30,
+        keyGenerator: (req) => `coach:${req.user.uid}`,
         standardHeaders: 'draft-8',
         legacyHeaders: false,
         message: { error: 'Too many saves. Please wait a minute and try again.' },
@@ -69,7 +70,7 @@ export function createApp({ store, verifyToken, origins, coachEmails = [], rateL
 
   // Public responses omit account IDs and the email of the last editor.
   function output(s, privateView = false) {
-    const { authorId, updatedBy, ...rest } = s;
+    const { authorId, updatedBy, lastSave, ...rest } = s;
     return privateView ? { ...rest, updatedBy } : rest;
   }
   app.get('/health', async (req, res) => {

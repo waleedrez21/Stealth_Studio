@@ -15,7 +15,7 @@ const users = {
   similarDomain: { uid: 'similar', email: 'coach@stealthgpt.ai.evil.com', email_verified: true },
   subdomain: { uid: 'subdomain', email: 'coach@team.stealthgpt.ai', email_verified: true },
 };
-async function server(t) {
+async function server(t, rateLimits = false) {
   const fake = fakeFirebase();
   const store = firestoreStore(fake.db, fake.bucket);
   const app = createApp({
@@ -26,7 +26,7 @@ async function server(t) {
     },
     origins: ['http://site.example'],
     coachEmails: ['a@example.com', 'b@example.com'],
-    rateLimits: false,
+    rateLimits,
   });
   const listener = app.listen(0, '127.0.0.1');
   await new Promise((resolve) => listener.once('listening', resolve));
@@ -958,4 +958,39 @@ test('every folder and subfolder has independent coach-editable descriptions wit
     assert.equal((await call(path)).status,404);
     assert.equal((await call(path,{token:'a',method:'PATCH',body:{description:'Invalid',revision:0}})).status,404);
   }
+});
+
+test('autosave requests are idempotent after dropped responses and cannot overwrite another coach', async (t) => {
+  const { call } = await server(t);
+  const creationId='20000000-0000-4000-8000-000000000001';
+  const requestId='20000000-0000-4000-8000-000000000002';
+  const body={...draft,creationId,requestId};
+  const first=await call('/api/scripts',{token:'a',method:'POST',body});
+  assert.equal(first.status,201);assert.equal(first.data.id,creationId);
+  const retry=await call('/api/scripts',{token:'a',method:'POST',body});
+  assert.deepEqual(retry.data,first.data);
+  assert.equal((await call('/api/drafts',{token:'b'})).data.length,1);
+  assert.equal((await call('/api/scripts/'+creationId,{token:'b'})).data.lastSave,undefined);
+  assert.equal((await call('/api/scripts',{token:'b',method:'POST',body})).status,409);
+  assert.equal((await call('/api/scripts',{token:'a',method:'POST',body:{...body,title:'Different request'}})).status,409);
+  const update={...draft,title:'Autosaved changes',revision:0,requestId:'20000000-0000-4000-8000-000000000003'};
+  const changed=await call('/api/scripts/'+creationId,{token:'a',method:'PATCH',body:update});
+  assert.equal(changed.status,200);assert.equal(changed.data.revision,1);
+  assert.deepEqual((await call('/api/scripts/'+creationId,{token:'a',method:'PATCH',body:update})).data,changed.data);
+  assert.equal((await call('/api/scripts/'+creationId,{token:'b',method:'PATCH',body:{...draft,title:'Coach B edit',revision:1}})).status,200);
+  assert.equal((await call('/api/scripts/'+creationId,{token:'a',method:'PATCH',body:update})).status,409);
+  assert.equal((await call('/api/scripts',{token:'a',method:'POST',body})).status,409);
+  assert.equal((await call('/api/scripts/'+creationId,{token:'a'})).data.title,'Coach B edit');
+  const published=await call('/api/scripts/'+creationId,{token:'a',method:'PATCH',body:{...draft,status:'published',revision:2,requestId:'20000000-0000-4000-8000-000000000004'}});
+  assert.equal(published.status,200);
+  assert.equal((await call('/api/scripts/'+creationId)).data.lastSave,undefined);
+});
+
+
+test('coaches sharing a network have separate autosave rate limits', async (t) => {
+  const { call } = await server(t, true);
+  for (let i=0;i<30;i++)
+    assert.equal((await call('/api/scripts',{token:'a',method:'POST',body:draft})).status,201);
+  assert.equal((await call('/api/scripts',{token:'a',method:'POST',body:draft})).status,429);
+  assert.equal((await call('/api/scripts',{token:'b',method:'POST',body:draft})).status,201);
 });

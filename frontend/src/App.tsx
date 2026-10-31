@@ -271,7 +271,7 @@ function Drafts() {
             <FilePenLine size={24} />
             <div>
               <strong>{active === 'all' ? 'No saved team drafts yet.' : 'No drafts in this folder.'}</strong>
-              <p>Choose Save shared draft in the editor to share a script with every approved coach. Unsaved edits stay in the editor.</p>
+              <p>Start writing a script. It autosaves here for every approved coach after a short pause.</p>
               <a className="button" href="/post" style={{ marginTop: 14 }}>
                 Create a script
               </a>

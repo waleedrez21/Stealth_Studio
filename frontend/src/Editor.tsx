@@ -17,11 +17,12 @@ import {
 import RichTextEditor from './RichTextEditor';
 import RichContent from './RichContent';
 import { plainText } from './rich-text.js';
-import { useState, useRef, Fragment } from 'react';
+import { useState, useRef, useMemo, Fragment } from 'react';
 import { Plus, ImagePlus, Trash2, FileText, Eye } from 'lucide-react';
 import ScriptActions from './ScriptActions';
 import ImageRef from './Images';
-import { api } from './api';
+import { api, ApiError } from './api';
+import { useScriptAutosave, type ScriptValue } from './useScriptAutosave';
 import { useRealtime } from './realtime';
 import { useEffect } from 'react';
 import type { Block } from './data';
@@ -71,20 +72,29 @@ export default function Editor({
   const [preview, setPreview] = useState(false);
   const [draftId, setDraftId] = useState(initial?.id);
   const [revision, setRevision] = useState(initial?.revision);
-  const [saved, setSaved] = useState('');
-  useEffect(() => { setSaved(''); }, [title, summary, notes, folder, subfolder, urgent, references, blocks]);
+  const value = useMemo<ScriptValue>(() => ({
+    title, summary, notes, folder, subfolder: folder === 'general' ? subfolder : '', urgent,
+    references: references.map(r => ({ label: r.label.trim(), url: r.url.trim() })).filter(r => r.label || r.url),
+    blocks: blocks.map(({ editorKey, ...block }) => block), status: mode,
+  }), [title, summary, notes, folder, subfolder, urgent, references, blocks, mode]);
+  const autosave = useScriptAutosave(value, { id: initial?.id, revision: initial?.revision }, busy || uploading, result => {
+    setDraftId(result.id); setRevision(result.revision); setError('');
+    if (mode === 'draft' && result.status === 'draft') history.replaceState(null, '', `/drafts/${result.id}`);
+    if (mode === 'draft' && result.status === 'published') queueMicrotask(() => location.assign(`/scripts/${result.id}`));
+  });
   const file = useRef<HTMLInputElement>(null);
-  const [outdated, setOutdated] = useState(false);
+  const outdated = autosave.state.phase === 'conflict';
   const live = useRealtime(mode === 'published' ? 'published' : 'draft', !!draftId);
   useEffect(() => {
     if (!draftId) return;
     let stopped = false;
     api<{ revision: number }>(`/api/scripts/${draftId}`)
       .then((current) => {
-        if (!stopped) setOutdated(current.revision > (revision ?? 0));
+        if (!stopped) autosave.controller.current?.observeRemote(current.revision);
       })
-      .catch(() => {
-        if (!stopped) setOutdated(true);
+      .catch(e => {
+        if (!stopped && e instanceof ApiError && e.status === 404)
+          autosave.controller.current?.pause('This script is no longer available. Your unsaved edits are still here.');
       });
     return () => {
       stopped = true;
@@ -115,46 +125,14 @@ export default function Editor({
     }
   }
   async function save(status: 'draft' | 'published') {
-    setBusy(true);
-    setError('');
-    setSaved('');
+    setBusy(true); setError('');
     try {
-      const result = await api<{ id: string; revision: number }>(
-        draftId ? `/api/scripts/${draftId}` : '/api/scripts',
-        {
-          method: draftId ? 'PATCH' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            title,
-            summary,
-            notes,
-            folder,
-            subfolder: folder === 'general' ? subfolder : '',
-            urgent,
-            references: references
-              .map((r) => ({ label: r.label.trim(), url: r.url.trim() }))
-              .filter((r) => r.label || r.url),
-            blocks: blocks.map(({ editorKey, ...block }) => block),
-            status,
-            revision,
-          }),
-        },
-      );
-      if (status === 'published') {
-        location.assign(`/scripts/${result.id}`);
-        return;
-      }
-      setDraftId(result.id);
-      setRevision(result.revision);
-      setSaved('Saved to shared drafts. Every approved coach can open and edit this script.');
-      history.replaceState(null, '', `/drafts/${result.id}`);
+      if (!autosave.controller.current?.getState().publishing) autosave.controller.current?.update(value);
+      const result = await autosave.controller.current?.flush(status);
+      if (result && status === 'published' && mode === 'published') location.assign(`/scripts/${result.id}`);
     } catch (e) {
-      setError(
-        e instanceof Error ? e.message : 'Couldn’t save. Your script is still here; try again.',
-      );
-    } finally {
-      setBusy(false);
-    }
+      setError(e instanceof Error ? e.message : 'Couldn’t save. Your changes are still in this editor.');
+    } finally { setBusy(false); }
   }
   async function publish(e: React.FormEvent) {
     e.preventDefault();
@@ -192,7 +170,7 @@ export default function Editor({
             title={initial?.title || title}
             revision={revision || 0}
             afterDelete={mode === 'published' ? '/' : '/drafts'}
-            disabled={busy || uploading}
+            disabled={busy || uploading || autosave.state.dirty}
           />
         </div>
       )}
@@ -211,7 +189,20 @@ export default function Editor({
         </p>
       )}
       <FolderDescription folder={folder} subfolder={subfolder} />
+      <p className={`autosave-status autosave-${autosave.state.phase}`} role="status" aria-live="polite">
+        {autosave.state.phase === 'idle' ? 'Start typing — your draft will save automatically.' :
+          autosave.state.phase === 'saving' ? 'Saving…' :
+          autosave.state.phase === 'saved' ? `All changes saved${autosave.state.savedAt ? ' · ' + new Date(autosave.state.savedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : ''}` :
+          autosave.state.phase === 'unsaved' ? 'Unsaved changes · autosave pending' :
+          autosave.state.phase === 'conflict' ? 'Autosave paused — another coach changed this script. Your edits are still here.' :
+          'Couldn’t autosave. Your changes are still in this editor.'}
+        {autosave.state.phase === 'error' && <>
+          <span className="autosave-error-detail">{autosave.state.message}</span>
+          <button type="button" className="secondary" disabled={busy || uploading} onClick={() => save(mode)}>Retry save</button>
+        </>}
+      </p>
       <form onSubmit={publish}>
+        <fieldset className="editor-fields" disabled={busy || autosave.state.publishing}>
         {preview ? (
           <div className="preview-paper">
             <span className="folder-label">{scriptFolderName(folder, subfolder)}</span>
@@ -431,11 +422,6 @@ export default function Editor({
             </div>
           </>
         )}
-        {saved && (
-          <p className="save-success" role="status">
-            {saved} <a href="/drafts">View all drafts</a>
-          </p>
-        )}
         {error && (
           <p className="notice error" role="alert">
             {error}
@@ -444,25 +430,26 @@ export default function Editor({
         <div className="publish-bar">
           <p>
             {mode === 'published'
-              ? 'Saved changes update the published script for everyone.'
-              : 'Drafts stay with coaches. Published scripts are visible to everyone.'}
+              ? 'Autosave is on. Your edits update the published script for everyone.'
+              : 'Autosave is on. Drafts are shared with coaches. Use Publish script when ready.'}
           </p>
           <div className="save-actions">
             {mode === 'draft' && (
               <button
                 className="secondary"
                 type="button"
-                disabled={busy || uploading}
+                disabled={busy || uploading || outdated}
                 onClick={() => save('draft')}
               >
                 {busy ? 'Saving…' : 'Save shared draft'}
               </button>
             )}
-            <button className="button" type="submit" disabled={busy || uploading}>
+            <button className="button" type="submit" disabled={busy || uploading || outdated}>
               {busy ? 'Saving…' : mode === 'published' ? 'Save changes' : 'Publish script'}
             </button>
           </div>
         </div>
+        </fieldset>
       </form>
     </main>
   );

@@ -41,6 +41,8 @@ export const scriptInput = z
       .max(10)
       .default([]),
     revision: z.number().int().nonnegative().optional(),
+    creationId: z.string().uuid().optional(),
+    requestId: z.string().uuid().optional(),
     blocks: z
       .array(
         z.discriminatedUnion('type', [
