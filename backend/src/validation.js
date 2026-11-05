@@ -22,7 +22,7 @@ export const scriptInput = z
     notes: richText(5000),
     status: z.enum(['draft', 'published']),
     folder: z.enum(['general', 'first-10', 'engagement', 'study-sim']).default('general'),
-    subfolder: z.enum(['', 'stealthgpt', 'humanchatgpt']).optional(),
+    subfolder: z.enum(['', 'stealthgpt', 'humanchatgpt', 'affiliate-scripts']).optional(),
     urgent: z.boolean().optional(),
     references: z
       .array(

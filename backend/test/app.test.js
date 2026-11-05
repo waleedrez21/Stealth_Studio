@@ -918,7 +918,7 @@ test('Study Sim folder descriptions are public, shared, validated and protected 
   const path='/api/folders/study-sim/description';
   const initial=await call(path);
   assert.equal(initial.status,200);
-  assert.match(initial.data.description,/Study Sim only/);
+  assert.match(initial.data.description,/StudySim only/);
   assert.equal(initial.data.revision,0);
   for (const token of [undefined,'outsider','unverified'])
     assert.ok([401,403].includes((await call(path,{token,method:'PATCH',body:{description:'Changed',revision:0}})).status));
@@ -934,7 +934,7 @@ test('Study Sim folder descriptions are public, shared, validated and protected 
 
 test('every folder and subfolder has independent coach-editable descriptions without changing Study Sim', async (t) => {
   const { call } = await server(t);
-  const ids = ['first-10','engagement','study-sim','general','general--stealthgpt','general--humanchatgpt'];
+  const ids = ['first-10','engagement','study-sim','general','general--stealthgpt','general--humanchatgpt','general--affiliate-scripts'];
   const studyPath = '/api/folders/study-sim/description';
   await call(studyPath,{token:'a',method:'PATCH',body:{description:'Keep Josh’s existing description',revision:0}});
   for (const id of ids.filter(id=>id!=='study-sim')) {

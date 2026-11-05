@@ -4,7 +4,7 @@ import { useSession } from './session';
 import { folderId, subfolderId, scriptFolderName } from './folders';
 
 const studySimDefault =
-  'These scripts are for Study Sim only. Do not use them to promote StealthGPT: studying, flashcards and quizzes are Study Sim features.';
+  'These scripts are for StudySim only. Do not use them to promote StealthGPT: studying, flashcards and quizzes are StudySim features.';
 type Description = { description: string; revision: number };
 
 export default function FolderDescription({ folder, subfolder = '', editable = false }: {
@@ -53,8 +53,8 @@ function DescriptionPanel({ id, name, editable }: { id: string; name: string; ed
 
   if (!isStudySim && !value.description && !(editable && coach)) return null;
   return <aside className="study-sim-guidance" aria-label={`${name} guidance`}>
-    <strong>{isStudySim ? 'Study Sim only' : 'Folder description'}</strong>
-    {isStudySim && <p>Use these scripts to promote Study Sim, not StealthGPT.</p>}
+    <strong>{isStudySim ? 'StudySim only' : 'Folder description'}</strong>
+    {isStudySim && <p>Use these scripts to promote StudySim, not StealthGPT.</p>}
     {editing && coach ? <div className="folder-description-editor">
       <label htmlFor={labelId}>Short folder description</label>
       <textarea id={labelId} value={text} onChange={e => setText(e.target.value)} maxLength={1000} rows={3} disabled={busy} />

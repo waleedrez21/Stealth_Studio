@@ -1,13 +1,14 @@
 export const folders = [
   { id: 'first-10', name: 'Starter Scripts' },
   { id: 'engagement', name: 'Engagement' },
-  { id: 'study-sim', name: 'Study Sim Scripts' },
+  { id: 'study-sim', name: 'StudySim' },
   { id: 'general', name: 'StealthGPT Scripts' },
 ] as const;
 export type FolderId = (typeof folders)[number]['id'];
 export const subfolders = [
   { id: 'stealthgpt', name: 'StealthGPT' },
   { id: 'humanchatgpt', name: 'Humanchatgpt' },
+  { id: 'affiliate-scripts', name: 'Affiliate Scripts' },
 ] as const;
 export type SubfolderId = (typeof subfolders)[number]['id'] | '';
 export function subfolderId(value: unknown): SubfolderId {
