@@ -16,7 +16,7 @@ const richText = (LIMIT) =>
       }
     });
 function validSubfolder(folder, child) {
-  if (child === 'rizzmyprofessor') return folder === 'study-sim';
+  if (child === 'studysim' || child === 'rizzmyprofessor') return folder === 'study-sim';
   return folder === 'general' && ['stealthgpt', 'humanchatgpt', 'affiliate-scripts'].includes(child);
 }
 export const scriptInput = z
@@ -26,7 +26,7 @@ export const scriptInput = z
     notes: richText(5000),
     status: z.enum(['draft', 'published']),
     folder: z.enum(['general', 'first-10', 'engagement', 'study-sim']).default('general'),
-    subfolder: z.enum(['', 'stealthgpt', 'humanchatgpt', 'affiliate-scripts', 'rizzmyprofessor']).optional(),
+    subfolder: z.enum(['', 'stealthgpt', 'humanchatgpt', 'affiliate-scripts', 'studysim', 'rizzmyprofessor']).optional(),
     urgent: z.boolean().optional(),
     references: z
       .array(

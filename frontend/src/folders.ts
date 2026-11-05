@@ -9,6 +9,7 @@ const subfolders = [
   { parent: 'general', id: 'stealthgpt', name: 'StealthGPT' },
   { parent: 'general', id: 'humanchatgpt', name: 'Humanchatgpt' },
   { parent: 'general', id: 'affiliate-scripts', name: 'Affiliate Scripts' },
+  { parent: 'study-sim', id: 'studysim', name: 'StudySim' },
   { parent: 'study-sim', id: 'rizzmyprofessor', name: 'RizzMyProfessor' },
 ] as const;
 export type SubfolderId = (typeof subfolders)[number]['id'] | '';

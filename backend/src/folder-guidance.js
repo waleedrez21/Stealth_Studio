@@ -5,7 +5,7 @@ export const studySimDescription =
 
 export const descriptionFolders = new Set([
   'first-10', 'engagement', 'study-sim', 'general',
-  'general--stealthgpt', 'general--humanchatgpt', 'general--affiliate-scripts', 'study-sim--rizzmyprofessor',
+  'general--stealthgpt', 'general--humanchatgpt', 'general--affiliate-scripts', 'study-sim--studysim', 'study-sim--rizzmyprofessor',
 ]);
 
 export const folderDescriptionInput = z.object({
@@ -14,5 +14,5 @@ export const folderDescriptionInput = z.object({
 });
 
 export function normalizeFolderDescription(folder, description) {
-  return (folder === 'study-sim' || folder === 'study-sim--rizzmyprofessor') ? description.replace(/\bstudy[ \t]+sim\b/gi, 'StudySim') : description;
+  return (folder === 'study-sim' || folder.startsWith('study-sim--')) ? description.replace(/\bstudy[ \t]+sim\b/gi, 'StudySim') : description;
 }
