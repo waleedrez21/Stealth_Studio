@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { firebaseServices } from './firebase.js';
 import { firestoreStore } from './store.js';
 import { createApp } from './app.js';
+import { labelExistingStudySimScripts } from './studysim-migration.js';
 const { db, auth, bucket } = firebaseServices();
 const origins = (process.env.FRONTEND_ORIGINS || '')
   .split(',')
@@ -18,6 +19,8 @@ const app = createApp({
   origins,
   coachEmails,
 });
+const labeled = await labelExistingStudySimScripts(db);
+console.log(`StudySim folder migration complete: ${labeled} scripts labeled`);
 const port = Number(process.env.PORT || 3001);
 const server = app.listen(port, '0.0.0.0', () =>
   console.log(`Stealth Studio API listening on port ${port}`),

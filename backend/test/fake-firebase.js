@@ -9,14 +9,14 @@ export function fakeFirebase() {
     exists: map.has(key),
     data: () => structuredClone(map.get(key)),
   });
-  function query(collection, status) {
-    const docs = () =>
-      [...data.keys()]
+  function query(collection, field, value) {
+    const docs = (map = data) =>
+      [...map.keys()]
         .filter((k) => k.startsWith(collection + '/'))
-        .map((k) => snap(k))
-        .filter((s) => !status || s.data().status === status);
+        .map((k) => snap(k, map))
+        .filter((s) => !field || s.data()[field] === value);
     return {
-      get: async () => ({ docs: docs() }),
+      get: async (map) => ({ docs: docs(map) }),
       onSnapshot(next) {
         const listener = () => next({ docs: docs() });
         listeners.add(listener);
@@ -41,7 +41,7 @@ export function fakeFirebase() {
     collection(name) {
       return {
         doc: (id) => ref(`${name}/${id}`),
-        where: (_, __, status) => query(name, status),
+        where: (field, _, value) => query(name, field, value),
         limit: () => query(name),
       };
     },
@@ -49,7 +49,7 @@ export function fakeFirebase() {
       const run = async () => {
         const staged = new Map([...data].map(([k, v]) => [k, structuredClone(v)]));
         const tx = {
-          get: async (ref) => snap(ref.key, staged),
+          get: async (ref) => ref.key ? snap(ref.key, staged) : ref.get(staged),
           getAll: async (...refs) => refs.map((r) => snap(r.key, staged)),
           set(ref, value) {
             staged.set(ref.key, structuredClone(value));
