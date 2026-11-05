@@ -8,7 +8,8 @@ import ReferenceEditor from './ReferenceEditor';
 import {
   folders,
   folderId,
-  subfolders,
+  subfoldersFor,
+  folderName,
   subfolderId,
   scriptFolderName,
   type FolderId,
@@ -57,7 +58,7 @@ export default function Editor({
   );
   const [folder, setFolder] = useState<FolderId>(folderId(initial?.folder || initialFolder));
   const [subfolder, setSubfolder] = useState<SubfolderId>(
-    subfolderId(initial ? initial.subfolder : initialSubfolder),
+    subfolderId(initial ? initial.subfolder : initialSubfolder, folder),
   );
   const [urgent, setUrgent] = useState(initial?.urgent === true);
   const [title, setTitle] = useState(initial?.title || '');
@@ -73,7 +74,7 @@ export default function Editor({
   const [draftId, setDraftId] = useState(initial?.id);
   const [revision, setRevision] = useState(initial?.revision);
   const value = useMemo<ScriptValue>(() => ({
-    title, summary, notes, folder, subfolder: folder === 'general' ? subfolder : '', urgent,
+    title, summary, notes, folder, subfolder: subfolderId(subfolder, folder), urgent,
     references: references.map(r => ({ label: r.label.trim(), url: r.url.trim() })).filter(r => r.label || r.url),
     blocks: blocks.map(({ editorKey, ...block }) => block), status: mode,
   }), [title, summary, notes, folder, subfolder, urgent, references, blocks, mode]);
@@ -248,16 +249,16 @@ export default function Editor({
                 ))}
               </select>
             </label>
-            {folder === 'general' && (
+            {subfoldersFor(folder).length > 0 && (
               <label className="field">
                 Subfolder
                 <select
                   className="folder-select"
                   value={subfolder}
-                  onChange={(e) => setSubfolder(subfolderId(e.target.value))}
+                  onChange={(e) => setSubfolder(subfolderId(e.target.value, folder))}
                 >
-                  <option value="">None — main StealthGPT Scripts folder</option>
-                  {subfolders.map((f) => (
+                  <option value="">None — main {folderName(folder)} folder</option>
+                  {subfoldersFor(folder).map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.name}
                     </option>

@@ -15,6 +15,10 @@ const richText = (LIMIT) =>
         return '';
       }
     });
+function validSubfolder(folder, child) {
+  if (child === 'rizzmyprofessor') return folder === 'study-sim';
+  return folder === 'general' && ['stealthgpt', 'humanchatgpt', 'affiliate-scripts'].includes(child);
+}
 export const scriptInput = z
   .object({
     title: z.string().trim().max(150),
@@ -22,7 +26,7 @@ export const scriptInput = z
     notes: richText(5000),
     status: z.enum(['draft', 'published']),
     folder: z.enum(['general', 'first-10', 'engagement', 'study-sim']).default('general'),
-    subfolder: z.enum(['', 'stealthgpt', 'humanchatgpt', 'affiliate-scripts']).optional(),
+    subfolder: z.enum(['', 'stealthgpt', 'humanchatgpt', 'affiliate-scripts', 'rizzmyprofessor']).optional(),
     urgent: z.boolean().optional(),
     references: z
       .array(
@@ -87,8 +91,8 @@ export const scriptInput = z
       .max(48),
   })
   .superRefine((s, ctx) => {
-    if (s.subfolder && s.folder !== 'general')
-      ctx.addIssue({ code: 'custom', message: 'Choose StealthGPT Scripts for this subfolder.' });
+    if (s.subfolder && !validSubfolder(s.folder, s.subfolder))
+      ctx.addIssue({ code: 'custom', message: 'Choose the matching folder for this subfolder.' });
     if (
       s.status === 'published' &&
       (!s.title || !s.blocks.some((b) => b.type === 'image' || plainText(b.text).trim()))
@@ -118,6 +122,7 @@ export function nextRecord(existing, input, user, now) {
       });
   }
   const folder = input.folder ?? existing?.folder ?? 'general';
+  const child = input.subfolder ?? (existing?.folder === folder ? existing.subfolder : '') ?? '';
   return {
     ...existing,
     title: input.title || 'Untitled script',
@@ -126,10 +131,7 @@ export function nextRecord(existing, input, user, now) {
     blocks: input.blocks,
     status: input.status,
     folder,
-    subfolder:
-      folder === 'general'
-        ? (input.subfolder ?? (existing?.folder === 'general' ? existing?.subfolder : '') ?? '')
-        : '',
+    subfolder: validSubfolder(folder, child) ? child : '',
     urgent: input.urgent ?? existing?.urgent ?? false,
     references: input.references ?? existing?.references ?? [],
     revision: existing ? existing.revision + 1 : 0,

@@ -994,3 +994,27 @@ test('coaches sharing a network have separate autosave rate limits', async (t) =
   assert.equal((await call('/api/scripts',{token:'a',method:'POST',body:draft})).status,429);
   assert.equal((await call('/api/scripts',{token:'b',method:'POST',body:draft})).status,201);
 });
+
+test('RizzMyProfessor drafts publish under StudySim and lose the subfolder when moved out', async (t) => {
+  const { call } = await server(t);
+  const child = { ...draft, folder: 'study-sim', subfolder: 'rizzmyprofessor' };
+  assert.equal((await call('/api/scripts', {
+    token: 'a', method: 'POST', body: { ...child, folder: 'general' },
+  })).status, 400);
+  const created = await call('/api/scripts', { token: 'a', method: 'POST', body: child });
+  assert.equal(created.status, 201);
+  const path = '/api/scripts/' + created.data.id;
+  assert.equal((await call(path)).status, 404);
+  assert.equal((await call(path, { token: 'b' })).data.subfolder, 'rizzmyprofessor');
+  assert.equal((await call(path, {
+    token: 'a', method: 'PATCH',
+    body: { ...draft, folder: 'study-sim', status: 'published', revision: 0 },
+  })).status, 200);
+  assert.equal((await call(path)).data.subfolder, 'rizzmyprofessor');
+  assert.equal((await call(path, {
+    token: 'a', method: 'PATCH',
+    body: { ...draft, folder: 'general', status: 'published', revision: 1 },
+  })).status, 200);
+  assert.equal((await call(path)).data.subfolder, '');
+  assert.equal((await call('/api/folders/study-sim--rizzmyprofessor/description')).status, 200);
+});

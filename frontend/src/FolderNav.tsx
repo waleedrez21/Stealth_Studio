@@ -3,7 +3,8 @@ import {
   folders,
   folderId,
   subfolderId,
-  subfolders,
+  subfoldersFor,
+  folderName,
   folderHref,
   type FolderId,
   type SubfolderId,
@@ -46,21 +47,21 @@ export default function FolderNav({
           </a>
         ))}
       </nav>
-      {active === 'general' && (
-        <nav className="subfolder-nav" aria-label="StealthGPT Scripts subfolders">
-          <span className="subfolder-heading">StealthGPT Scripts</span>
+      {active !== 'all' && subfoldersFor(active).length > 0 && (
+        <nav className="subfolder-nav" aria-label={folderName(active) + " subfolders"}>
+          <span className="subfolder-heading">{folderName(active)}</span>
           <a
             className={`subfolder-link ${!child ? 'active' : ''}`}
-            href={folderHref(base, 'general')}
+            href={folderHref(base, active)}
             aria-current={!child ? 'page' : undefined}
           >
             All in this folder
           </a>
-          {subfolders.map((f) => (
+          {subfoldersFor(active).map((f) => (
             <a
               key={f.id}
               className={`subfolder-link ${child === f.id ? 'active' : ''}`}
-              href={folderHref(base, 'general', f.id)}
+              href={folderHref(base, active, f.id)}
               aria-current={child === f.id ? 'page' : undefined}
             >
               <Folder size={16} />
@@ -68,7 +69,7 @@ export default function FolderNav({
               <span className="folder-count">
                 {
                   records.filter(
-                    (s) => folderId(s.folder) === 'general' && subfolderId(s.subfolder) === f.id,
+                    (s) => folderId(s.folder) === active && subfolderId(s.subfolder, active) === f.id,
                   ).length
                 }
               </span>

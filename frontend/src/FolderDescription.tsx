@@ -11,7 +11,7 @@ export default function FolderDescription({ folder, subfolder = '', editable = f
   folder: string; subfolder?: string; editable?: boolean;
 }) {
   const parent = folderId(folder);
-  const child = parent === 'general' ? subfolderId(subfolder) : '';
+  const child = subfolderId(subfolder, parent);
   const id = child ? `${parent}--${child}` : parent;
   return <DescriptionPanel key={id} id={id} name={scriptFolderName(parent, child)} editable={editable} />;
 }

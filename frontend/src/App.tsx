@@ -128,7 +128,7 @@ function Library() {
   const [pinVersion, setPinVersion] = useState(0);
   const active = selectedFolder(new URLSearchParams(location.search).get('folder'));
   const child =
-    active === 'general' ? subfolderId(new URLSearchParams(location.search).get('subfolder')) : '';
+    subfolderId(new URLSearchParams(location.search).get('subfolder'), active);
   const live = useRealtime('published');
   const { data, error, loading } = useLoad<Record[]>('/api/scripts', live.version + pinVersion);
   const records = data || [];
@@ -136,7 +136,7 @@ function Library() {
     active === 'all'
       ? [...records]
       : records.filter(
-          (s) => folderId(s.folder) === active && (!child || subfolderId(s.subfolder) === child),
+          (s) => folderId(s.folder) === active && (!child || subfolderId(s.subfolder, folderId(s.folder)) === child),
         )
   ).sort(
     (a, b) =>
@@ -218,7 +218,7 @@ function Library() {
 function Drafts() {
   const active = selectedFolder(new URLSearchParams(location.search).get('folder'));
   const child =
-    active === 'general' ? subfolderId(new URLSearchParams(location.search).get('subfolder')) : '';
+    subfolderId(new URLSearchParams(location.search).get('subfolder'), active);
   const { coach } = useSession();
   const live = useRealtime('draft', coach);
   const { data, error, loading, refreshing, refresh } = useLoad<Record[]>('/api/drafts', live.version, coach, true);
@@ -227,7 +227,7 @@ function Drafts() {
     active === 'all'
       ? records
       : records.filter(
-          (s) => folderId(s.folder) === active && (!child || subfolderId(s.subfolder) === child),
+          (s) => folderId(s.folder) === active && (!child || subfolderId(s.subfolder, folderId(s.folder)) === child),
         );
   return (
     <CoachGate>
@@ -291,9 +291,9 @@ function ArchiveLibrary() {
   const live = useRealtime('archived', coach);
   const { data, error, loading } = useLoad<Record[]>('/api/archive', live.version, coach);
   const active = selectedFolder(new URLSearchParams(location.search).get('folder'));
-  const child = active === 'general' ? subfolderId(new URLSearchParams(location.search).get('subfolder')) : '';
+  const child = subfolderId(new URLSearchParams(location.search).get('subfolder'), active);
   const records = data || [];
-  const visible = records.filter(s => active === 'all' || (folderId(s.folder) === active && (!child || subfolderId(s.subfolder) === child)));
+  const visible = records.filter(s => active === 'all' || (folderId(s.folder) === active && (!child || subfolderId(s.subfolder, folderId(s.folder)) === child)));
   return <CoachGate><main className="library">
     <div className="page-heading"><div>
       <div className="eyebrow">COACH WORKSPACE</div>
@@ -314,12 +314,12 @@ function ArchiveLibrary() {
 function Body({ s }: { s: Script }) {
   return (
     <>
-      <FolderDescription folder={folderId(s.folder)} subfolder={subfolderId(s.subfolder)} />
+      <FolderDescription folder={folderId(s.folder)} subfolder={subfolderId(s.subfolder, folderId(s.folder))} />
       <ReferenceVideos references={s.references} />
       <RichContent className="reader-summary" value={s.summary} />
       <a
         className="reader-folder"
-        href={folderHref('/', folderId(s.folder), subfolderId(s.subfolder))}
+        href={folderHref('/', folderId(s.folder), subfolderId(s.subfolder, folderId(s.folder)))}
       >
         {scriptFolderName(s.folder, s.subfolder)}
       </a>
@@ -433,11 +433,10 @@ function NewScript() {
     <CoachGate>
       <Editor
         initialFolder={folderId(new URLSearchParams(location.search).get('folder'))}
-        initialSubfolder={
-          folderId(new URLSearchParams(location.search).get('folder')) === 'general'
-            ? subfolderId(new URLSearchParams(location.search).get('subfolder'))
-            : ''
-        }
+        initialSubfolder={subfolderId(
+          new URLSearchParams(location.search).get('subfolder'),
+          folderId(new URLSearchParams(location.search).get('folder')),
+        )}
         author={user?.displayName || user?.email || 'Coach'}
       />
     </CoachGate>

@@ -5,22 +5,26 @@ export const folders = [
   { id: 'general', name: 'StealthGPT Scripts' },
 ] as const;
 export type FolderId = (typeof folders)[number]['id'];
-export const subfolders = [
-  { id: 'stealthgpt', name: 'StealthGPT' },
-  { id: 'humanchatgpt', name: 'Humanchatgpt' },
-  { id: 'affiliate-scripts', name: 'Affiliate Scripts' },
+const subfolders = [
+  { parent: 'general', id: 'stealthgpt', name: 'StealthGPT' },
+  { parent: 'general', id: 'humanchatgpt', name: 'Humanchatgpt' },
+  { parent: 'general', id: 'affiliate-scripts', name: 'Affiliate Scripts' },
+  { parent: 'study-sim', id: 'rizzmyprofessor', name: 'RizzMyProfessor' },
 ] as const;
 export type SubfolderId = (typeof subfolders)[number]['id'] | '';
-export function subfolderId(value: unknown): SubfolderId {
-  return subfolders.some((f) => f.id === value) ? (value as SubfolderId) : '';
+export function subfoldersFor(parent: FolderId | 'all') {
+  return subfolders.filter(f => f.parent === parent);
+}
+export function subfolderId(value: unknown, parent: FolderId | 'all'): SubfolderId {
+  return subfoldersFor(parent).find(f => f.id === value)?.id ?? '';
 }
 export function scriptFolderName(folder: unknown, subfolder: unknown) {
-  const child =
-    folderId(folder) === 'general' ? subfolders.find((f) => f.id === subfolder) : undefined;
+  const child = subfoldersFor(folderId(folder)).find(f => f.id === subfolder);
   return child ? `${folderName(folder)} / ${child.name}` : folderName(folder);
 }
 export function folderHref(base: string, folder: FolderId, subfolder: SubfolderId = '') {
-  return `${base}?folder=${folder}${folder === 'general' && subfolder ? `&subfolder=${subfolder}` : ''}`;
+  const child = subfolderId(subfolder, folder);
+  return `${base}?folder=${folder}${child ? `&subfolder=${child}` : ''}`;
 }
 export function folderId(value: unknown): FolderId {
   return folders.some((f) => f.id === value) ? (value as FolderId) : 'general';
