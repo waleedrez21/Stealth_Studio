@@ -7,6 +7,21 @@ export function firestoreStore(db, bucket) {
   const assets = db.collection('assets');
   const ideas = db.collection('ideas');
   const folderDescriptions = db.collection('folderDescriptions');
+  async function updateScriptImageVisibility(tx, script, scriptId, isPublic) {
+    const refs = imageIds(script).map((id) => assets.doc(id));
+    const images = refs.length ? await tx.getAll(...refs) : [];
+    images.forEach((image, i) => {
+      if (!image.exists) {
+        if (isPublic)
+          throw Object.assign(new Error('An image is unavailable. No changes were saved.'), { status: 409 });
+        return;
+      }
+      const published = new Set(image.data().publishedScriptIds || []);
+      published.delete(scriptId);
+      if (isPublic) published.add(scriptId);
+      tx.update(refs[i], { publishedScriptIds: [...published] });
+    });
+  }
   return {
     async getFolderDescription(folder = 'study-sim') {
       const snap = await folderDescriptions.doc(folder).get();
@@ -144,6 +159,25 @@ export function firestoreStore(db, bucket) {
         return { id, ...record };
       });
     },
+    async moveToDraft(id, revision, user) {
+      return db.runTransaction(async (tx) => {
+        const ref = scripts.doc(id);
+        const snap = await tx.get(ref);
+        const old = snap.exists ? snap.data() : null;
+        assertRevision(old, revision);
+        if (old.status !== 'published')
+          throw Object.assign(new Error('Only published scripts can be moved to drafts.'), { status: 409 });
+        await updateScriptImageVisibility(tx, old, id, false);
+        const changes = {
+          status: 'draft',
+          revision: old.revision + 1,
+          updatedAt: new Date().toISOString(),
+          updatedBy: user.name || user.email,
+        };
+        tx.update(ref, changes);
+        return { id, ...old, ...changes };
+      });
+    },
     async setArchived(id, archived, revision, user) {
       return db.runTransaction(async (tx) => {
         const ref = scripts.doc(id);
@@ -153,16 +187,7 @@ export function firestoreStore(db, bucket) {
         if (archived === (old.status === 'archived'))
           throw Object.assign(new Error('This script has changed. Reload it and try again.'), { status: 409 });
         const status = archived ? 'archived' : old.archivePreviousStatus === 'draft' ? 'draft' : 'published';
-        const refs = imageIds(old).map((id) => assets.doc(id));
-        const images = refs.length ? await tx.getAll(...refs) : [];
-        images.forEach((image, i) => {
-          if (!image.exists)
-            throw Object.assign(new Error('An image is unavailable. No changes were saved.'), { status: 409 });
-          const published = new Set(image.data().publishedScriptIds || []);
-          published.delete(id);
-          if (status === 'published') published.add(id);
-          tx.update(refs[i], { publishedScriptIds: [...published] });
-        });
+        await updateScriptImageVisibility(tx, old, id, status === 'published');
         const now = new Date().toISOString();
         const record = {
           ...old, status, revision: old.revision + 1, updatedAt: now,

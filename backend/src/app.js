@@ -141,6 +141,12 @@ export function createApp({ store, verifyToken, origins, coachEmails = [], rateL
     const record = await store.setPinned(req.params.id, req.body.urgent, req.body.revision, req.user);
     res.json({ id: record.id, urgent: record.urgent, revision: record.revision });
   });
+  app.patch('/api/scripts/:id/unpublish', coach, writes, async (req, res) => {
+    if (!uuid.test(req.params.id) || !Number.isInteger(req.body?.revision) || req.body.revision < 0)
+      return res.status(400).json({ error: 'Reload the script before moving it to drafts.' });
+    const record = await store.moveToDraft(req.params.id, req.body.revision, req.user);
+    res.json({ id: record.id, status: record.status, revision: record.revision });
+  });
   app.patch('/api/scripts/:id/archive', coach, writes, async (req, res) => {
     if (!uuid.test(req.params.id) || typeof req.body?.archived !== 'boolean' ||
         !Number.isInteger(req.body?.revision) || req.body.revision < 0)

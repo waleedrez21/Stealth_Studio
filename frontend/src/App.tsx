@@ -355,6 +355,14 @@ function Reader({ id }: { id: string }) {
   const live = useRealtime('published', !sample);
   const { data, error, loading } = useLoad<Record>(`/api/scripts/${id}`, live.version + archiveLive.version, !sample);
   const s = sample || data;
+  if (!sample && !error && data?.status === 'draft') {
+    return (
+      <main className="reader">
+        <a className="back" href="/drafts">Back to drafts</a>
+        <p>This script is now a draft. <a href={`/drafts/${id}`}>Open draft</a></p>
+      </main>
+    );
+  }
   return (
     <main className="reader">
       <a className="back" href={data?.status === 'archived' ? '/archive' : '/'}>
@@ -377,6 +385,7 @@ function Reader({ id }: { id: string }) {
                 revision={s.revision || 0}
                 editHref={data?.status === 'archived' ? undefined : `/scripts/${id}/edit`}
                 archived={data?.status === 'archived'}
+                canMoveToDraft={data?.status === 'published'}
                 afterDelete={data?.status === 'archived' ? '/archive' : '/'}
               />
             )}
@@ -418,7 +427,9 @@ function Edit({ id, mode }: { id: string; mode: 'draft' | 'published' }) {
       ) : data.status !== mode ? (
         <main className="reader">
           <p>
-            This script is now {data.status}. <a href={`/scripts/${id}`}>Open script</a>
+            This script is now {data.status}. <a href={data.status === 'draft' ? `/drafts/${id}` : `/scripts/${id}`}>
+              {data.status === 'draft' ? 'Open draft' : 'Open script'}
+            </a>
           </p>
         </main>
       ) : (

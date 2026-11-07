@@ -1018,3 +1018,43 @@ test('RizzMyProfessor drafts publish under StudySim and lose the subfolder when 
   assert.equal((await call(path)).data.subfolder, '');
   assert.equal((await call('/api/folders/study-sim--rizzmyprofessor/description')).status, 200);
 });
+
+test('moving a published script to drafts keeps the same script and protects its content and images', async (t) => {
+  const { call, store, base } = await server(t);
+  const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  const image = await store.upload(png, 'image/png', users.a);
+  const shared = await store.upload(png, 'image/png', users.a);
+  const sharedBlock = { type: 'image', assetId: shared.id, caption: 'Shared image' };
+  const input = {
+    ...draft, status: 'published', folder: 'study-sim', subfolder: 'studysim', urgent: true,
+    blocks: [...draft.blocks, sharedBlock, { type: 'image', assetId: image.id, caption: 'Draft image' }],
+  };
+  const created = await call('/api/scripts', { token: 'a', method: 'POST', body: input });
+  assert.equal(created.status, 201);
+  const path = '/api/scripts/' + created.data.id;
+  await call('/api/scripts', { token: 'a', method: 'POST', body: {
+    ...input, title: 'Another published script', blocks: [...draft.blocks, sharedBlock],
+  } });
+  const original = await store.get(created.data.id);
+  const move = (token, revision) => call(path + '/unpublish', { token, method: 'PATCH', body: { revision } });
+  assert.equal((await move(undefined, 0)).status, 401);
+  assert.equal((await move('outsider', 0)).status, 403);
+  assert.equal((await move('b', undefined)).status, 400);
+  assert.equal((await move('b', 1)).status, 409);
+  assert.equal((await move('b', 0)).status, 200);
+  assert.equal((await move('b', 1)).status, 409);
+  assert.equal((await call(path)).status, 404);
+  assert.equal((await call('/api/scripts')).data.some(s => s.id === original.id), false);
+  assert.equal((await fetch(base + '/api/images/' + image.id)).status, 404);
+  assert.equal((await fetch(base + '/api/images/' + shared.id)).status, 200);
+  assert.equal((await fetch(base + '/api/images/' + image.id, { headers: { Authorization: 'Bearer b' } })).status, 200);
+  const moved = (await call('/api/drafts', { token: 'a' })).data.find(s => s.id === original.id);
+  assert.equal(moved.status, 'draft');
+  assert.equal(moved.revision, 1);
+  for (const field of ['title', 'blocks', 'folder', 'subfolder', 'urgent', 'createdAt', 'author'])
+    assert.deepEqual(moved[field], original[field]);
+  assert.equal((await call(path, { token: 'a', method: 'PATCH', body: { ...input, revision: 0 } })).status, 409);
+  assert.equal((await call(path, { token: 'b', method: 'PATCH', body: { ...input, revision: 1 } })).status, 200);
+  assert.equal((await call(path)).data.status, 'published');
+  assert.equal((await fetch(base + '/api/images/' + image.id)).status, 200);
+});
