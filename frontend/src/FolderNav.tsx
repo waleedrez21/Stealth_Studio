@@ -1,4 +1,4 @@
-import { Folder, Files } from 'lucide-react';
+import { Folder, Files, Play } from 'lucide-react';
 import {
   folders,
   folderId,
@@ -58,22 +58,29 @@ export default function FolderNav({
             All in this folder
           </a>
           {subfoldersFor(active).map((f) => (
-            <a
-              key={f.id}
-              className={`subfolder-link ${child === f.id ? 'active' : ''}`}
-              href={folderHref(base, active, f.id)}
-              aria-current={child === f.id ? 'page' : undefined}
-            >
-              <Folder size={16} />
-              {f.name}
-              <span className="folder-count">
-                {
-                  records.filter(
-                    (s) => folderId(s.folder) === active && subfolderId(s.subfolder, active) === f.id,
-                  ).length
-                }
-              </span>
-            </a>
+            <div className="subfolder-group" key={f.id}>
+              <a
+                className={`subfolder-link ${child === f.id ? 'active' : ''}`}
+                href={folderHref(base, active, f.id)}
+                aria-current={child === f.id ? 'page' : undefined}
+              >
+                <Folder size={16} />
+                {f.name}
+                <span className="folder-count">
+                  {
+                    records.filter(
+                      (s) => folderId(s.folder) === active && subfolderId(s.subfolder, active) === f.id,
+                    ).length
+                  }
+                </span>
+              </a>
+              {active === 'study-sim' && f.id === 'studysim' && (
+                <a className="subfolder-link subfolder-link-child" href="/simulations">
+                  <Play size={15} />
+                  Simulations
+                </a>
+              )}
+            </div>
           ))}
         </nav>
       )}

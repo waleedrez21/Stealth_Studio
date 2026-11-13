@@ -52,7 +52,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <header className="topbar">
           <span className="breadcrumb">
             Workspace <span>/</span>
-            <strong>{archive ? 'Archive' : ideas ? 'Potential videos' : drafts ? 'Drafts' : simulations ? 'Simulations' : 'Scripts'}</strong>
+            <strong>{archive ? 'Archive' : ideas ? 'Potential videos' : drafts ? 'Drafts' : simulations ? 'StudySim / Simulations' : 'Scripts'}</strong>
           </span>
           <div className="header-actions">
             {user && (
