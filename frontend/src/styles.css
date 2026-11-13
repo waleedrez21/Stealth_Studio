@@ -2104,3 +2104,23 @@ textarea,
 .autosave-saved { color: var(--green); }
 .autosave-error, .autosave-conflict { color: #963c27; }
 .autosave-error-detail { flex-basis: 100%; }
+
+
+/* StudySim simulation launcher */
+.simulation-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.simulation-card {
+  min-height: 290px; padding: 25px; display: flex; flex-direction: column; align-items: flex-start;
+  border: 1px solid var(--border); border-radius: 12px; background: var(--panel);
+  box-shadow: 0 3px 12px #5535210b; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.simulation-card:hover { transform: translateY(-3px); border-color: var(--green); box-shadow: 0 12px 28px #5535211a; }
+.simulation-card:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+.simulation-card-top { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+.simulation-number { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .12em; }
+.simulation-icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: #ead5be; color: var(--green); }
+.simulation-kicker { color: var(--green); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.simulation-card h2 { margin: 6px 0 8px; font-size: clamp(23px, 3vw, 32px); line-height: 1.15; }
+.simulation-card p { max-width: 52ch; margin: 0 0 25px; color: var(--muted); line-height: 1.55; }
+.simulation-launch { display: inline-flex; align-items: center; gap: 8px; margin-top: auto; color: var(--green); font-weight: 700; }
+@media (max-width: 760px) { .simulation-grid { grid-template-columns: 1fr; gap: 14px; } .simulation-card { min-height: 260px; padding: 21px; } }
+@media (prefers-reduced-motion: reduce) { .simulation-card { transition: none; } .simulation-card:hover { transform: none; } }

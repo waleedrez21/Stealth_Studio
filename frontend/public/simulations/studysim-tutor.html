@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f8f6">
+<title>StudySim · Visual Tutor Demo</title>
+<style>
+:root{font-family:Inter,system-ui,-apple-system,sans-serif;color:#172a23;background:#f5f8f6;--ink:#172a23;--muted:#53685e;--line:#d6e3dc;--green:#087b5c;--mint:#e6f7ee;--white:#fff}*{box-sizing:border-box}body{margin:0;min-width:300px}button{font:inherit;cursor:pointer;color:inherit}button:focus-visible{outline:3px solid #54bc99;outline-offset:3px}button:disabled{cursor:default;opacity:.45}svg{display:block}button svg{width:20px;height:20px}button{touch-action:manipulation}
+.app{min-height:100svh;display:grid;grid-template-rows:auto 1fr auto;position:relative;background:radial-gradient(circle,#dbe6de 1px,transparent 1.25px) 0 0/24px 24px,#f5f8f6}
+header{display:flex;align-items:center;gap:18px;padding:14px clamp(14px,3vw,42px);background:#f5f8f6ef;border-bottom:1px solid #e2ebe6;z-index:1}.brand{display:flex;align-items:center;flex:none}.brand img{width:194px;height:auto;mix-blend-mode:multiply}.header-info{border-left:1px solid var(--line);padding-left:18px;display:grid;gap:3px}.header-info span,.small{font-size:11px;letter-spacing:.11em;font-weight:750;text-transform:uppercase;color:var(--green)}.header-info strong{font-size:15px;font-weight:600}.right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.pill,.icon,.primary,.quiet{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;border:1px solid var(--line);background:#fff;min-height:42px;padding:0 14px;font-size:13px;font-weight:650;white-space:nowrap}.pill:hover,.icon:hover,.quiet:hover{background:#eff7f2}.icon{height:43px;width:43px;padding:0;flex:none}.primary{background:var(--green);border-color:var(--green);color:white;min-height:50px;padding:0 20px}.primary:hover{background:#05644b}.quiet{background:transparent}.stop{width:8px;height:8px;border-radius:2px;background:#e65569}.demo{font-size:11px;border:1px solid var(--line);background:#ffffffb8;border-radius:30px;padding:7px 10px;white-space:nowrap;color:var(--muted)}
+main{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:340px;padding:15px 20px 4px;position:relative}.board-label{position:absolute;top:17px;left:clamp(15px,3vw,43px);display:flex;align-items:center;gap:7px;font-size:12px;color:var(--muted)}.dot{width:7px;height:7px;background:#19a879;border-radius:50%;box-shadow:0 0 0 4px #d9f3e8}
+.board{width:min(100%,850px,calc((100svh - 270px)*1.72));min-width:min(100%,510px);margin:13px 0 0;overflow:visible}.ink{stroke:#253c32}.green{stroke:#087b5c}.orange{stroke:#c87945}.stroke{fill:none;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}.draw{stroke-dasharray:1;stroke-dashoffset:1}.board text{font-family:"Comic Sans MS","Chalkboard SE",system-ui,sans-serif;fill:#253c32;font-weight:600;letter-spacing:.1px}.board .g{fill:#087b5c}.board .o{fill:#a85a2c}.board .muted{fill:#65786f}.reveal{opacity:0}.show{opacity:1}.board text.reveal{transition:opacity .16s linear}
+footer{width:min(1100px,100%);margin:auto;padding:0 20px 17px;display:grid;gap:11px}.caption{font-size:clamp(17px,2vw,25px);text-align:center;min-height:3em;line-height:1.35;display:grid;place-content:center;padding:0 5px;font-weight:570;text-wrap:balance}.caption .who{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--green);font-weight:780;display:block;margin-bottom:5px}
+.dock{border:1px solid #e0eae4;background:#fff;border-radius:29px;box-shadow:0 16px 48px #18392a16;display:flex;align-items:center;gap:10px;padding:12px 14px}.avatar{display:grid;place-content:center;width:43px;height:43px;border-radius:50%;background:#e6f7ee;color:var(--green);border:1px solid #c5e9d9;flex:none;font-family:Georgia,serif;font-weight:700}.avatar img{width:100%;height:100%;object-fit:cover;object-position:50% 20%;border-radius:inherit}.avatar:has(img){display:block}.avatar.talking{box-shadow:0 0 0 4px #c6efdf}.talk-area{min-width:0;flex:1;background:#f4f7f5;border:1px solid #e2ebe6;border-radius:999px;padding:10px 16px;color:var(--muted);font-size:13px}.talk-area strong{color:var(--ink)}.controls{display:flex;gap:8px;align-items:center}.mic{background:var(--green);color:#fff;border-color:var(--green)}.mic:hover{background:#05664a}.mic.record{background:#a64550;border-color:#a64550}.dock-meta{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:11px;color:var(--muted);padding:0 4px}.link{border:0;background:none;color:var(--green);font-size:inherit;font-weight:690;padding:3px;text-decoration:underline;text-underline-offset:3px}.key{border:1px solid var(--line);border-radius:5px;background:white;padding:1px 5px;font:inherit}.dots{display:flex;gap:4px}.dots i{width:17px;height:3px;border-radius:9px;background:#dae9e0}.dots .on{background:var(--green)}
+.welcome{position:absolute;z-index:2;width:min(425px,calc(100% - 38px));padding:25px;text-align:center;background:#fffffff7;border:1px solid var(--line);border-radius:25px;box-shadow:0 16px 60px #123b2522;top:52%;left:50%;transform:translate(-50%,-50%)}.welcome[hidden]{display:none}.welcome h1{font-size:clamp(23px,4vw,34px);line-height:1.08;letter-spacing:-.035em;margin:9px 0 10px}.welcome p{font-size:14px;line-height:1.5;color:var(--muted);margin:0 0 18px}.welcome-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}.welcome .note{margin:11px 0 0;font-size:11px}
+dialog{width:min(580px,calc(100% - 24px));max-height:80svh;overflow:auto;border:1px solid var(--line);border-radius:22px;padding:22px;color:var(--ink);box-shadow:0 16px 60px #1b3b2b3a}dialog::backdrop{background:#142a2260}dialog header{padding:0;background:none;border:0;justify-content:space-between}dialog h2{margin:0}dialog ol{padding-left:19px}dialog li{margin:12px 0;line-height:1.5}dialog li strong{color:var(--green)}.waves{display:inline-flex;align-items:center;gap:3px;vertical-align:middle;margin-right:7px}.waves i{height:10px;width:2px;background:var(--green);border-radius:9px;animation:bounce .62s infinite alternate}.waves i:nth-child(2){animation-delay:.18s}.waves i:nth-child(3){animation-delay:.31s}@keyframes bounce{to{transform:scaleY(.32)}}[hidden]{display:none!important}
+@media(max-width:630px){header{gap:8px;padding:9px 10px}.brand img{width:125px}.header-info{padding-left:7px}.header-info strong{font-size:11px}.header-info span{font-size:9px}.right{gap:4px}.right .pill{padding:0 8px;min-height:34px;font-size:11px}.right .icon{display:none}.end-label{display:none}.board-label{top:13px}.board{width:100%;min-width:0;margin-top:22px}main{padding:11px 8px;min-height:300px}.dock{gap:6px;padding:8px;border-radius:23px}.controls{gap:5px}.icon,.avatar{width:35px;height:35px;min-height:35px}.icon svg{width:16px;height:16px}.talk-area{padding:8px 9px;font-size:11px}.caption{min-height:4em}footer{padding:0 10px 11px}.keyboard{display:none}.demo{padding:5px 6px;font-size:9px}}@media(prefers-reduced-motion:reduce){.waves i{animation:none}}
+.scene-label{display:block;font-size:12px;color:#537066;margin:12px 0 5px;font-weight:650}#scene-picker{font:inherit;font-size:14px;font-weight:650;color:var(--ink);border:1px solid var(--line);background:#f5faf7;border-radius:10px;padding:8px 12px;margin:0 0 12px;width:min(100%,280px)}
+#airflow-dot,#airflow-tight,#pot-beacon,#pot-target{transform-box:fill-box;transform-origin:center}
+.running #airflow-dot.show{animation:airflow 1s linear infinite}.running #airflow-tight.show{animation:airflow-tight 1.35s linear infinite}.running #pot-beacon.show{animation:beat .75s ease-in-out infinite}.running #pot-target.show{animation:beat 1.1s ease-in-out infinite}
+@keyframes airflow{0%{transform:translateX(-19px);opacity:0}22%,77%{opacity:1}100%{transform:translateX(19px);opacity:0}}
+@keyframes airflow-tight{0%{transform:scale(.55);opacity:0}50%{opacity:1}100%{transform:scale(1.3);opacity:0}}
+@keyframes beat{50%{transform:scale(1.16);opacity:.52}}
+@media(prefers-reduced-motion:reduce){.running #airflow-dot.show,.running #airflow-tight.show,.running #pot-beacon.show,.running #pot-target.show{animation:none}}</style>
+</head>
+<body>
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+<symbol id="mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3"/></symbol>
+<symbol id="volume" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5zm4 4c2 1 2 5 0 6m3-9c4 3 4 9 0 12"/></symbol>
+<symbol id="mute" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4V5zm5 4 5 6m0-6-5 6"/></symbol>
+<symbol id="pause" viewBox="0 0 24 24"><path d="M9 5v14m6-14v14" stroke-width="3"/></symbol>
+<symbol id="play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7z"/></symbol>
+<symbol id="expand" viewBox="0 0 24 24"><path d="M8 4H4v4m12-4h4v4M4 16v4h4m12-4v4h-4"/></symbol>
+</svg>
+<div class="app" id="lesson-app">
+<header>
+<div class="brand"><img src="/simulations/media/image-be466f6c63c8.png" alt="StudySim"></div>
+<div class="header-info"><span>Visual Tutor</span><strong id="subject">Nursing quiz</strong></div>
+<div class="right">
+<a class="pill" href="/simulations" aria-label="Back to simulations">← <span class="end-label">All simulations</span></a>
+<button class="pill" id="speed" title="Change playback speed">1× Speed</button>
+<button class="icon" id="full" aria-label="Toggle fullscreen"><svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><use href="#expand"/></svg></button>
+<button class="pill" id="end"><span class="stop"></span><span class="end-label">End lesson</span><span class="sr" hidden>End lesson</span></button>
+</div>
+</header>
+<main>
+<div class="board-label"><span class="dot"></span> Tutor whiteboard</div>
+<svg class="board" id="potassium-board" viewBox="0 0 820 450" role="img" aria-labelledby="potassium-title">
+<title id="potassium-title">High potassium: shifting it into cells versus removing it</title>
+<defs><marker id="pot-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M2 1 8 5 2 9" fill="none" stroke="#087b5c" stroke-width="2"/></marker></defs>
+<text x="61" y="62" font-size="36" class="g">Where did the potassium go?</text><path id="pot-underline" pathLength="1" d="M62 76Q326 82 578 74" class="stroke green draw"/>
+<g id="pot-layout" class="reveal">
+  <rect x="72" y="126" width="285" height="153" rx="33" fill="#fff0e9" stroke="#edc6b6" stroke-width="2"/>
+  <text x="91" y="153" font-size="18" class="o">IN THE BLOOD</text>
+  <ellipse cx="631" cy="205" rx="126" ry="78" fill="#e4f5ea" stroke="#98ceb4" stroke-width="2"/>
+  <text x="631" y="154" text-anchor="middle" font-size="18" class="g">INSIDE A CELL</text>
+</g>
+<path id="pot-outline" pathLength="1" d="M72 207v-48q0-33 33-33h219q33 0 33 33v87q0 33-33 33H105q-33 0-33-33Z M505 205a126 78 0 1 1 252 0a126 78 0 1 1-252 0" class="stroke green draw" opacity=".75"/>
+<g id="pot-ions" class="reveal">
+  <g id="ions-moving" fill="#087b5c" font-size="21">
+    <circle cx="130" cy="208" r="24" fill="#fff"/><text x="130" y="215" text-anchor="middle" class="g">K⁺</text>
+    <circle cx="198" cy="232" r="24" fill="#fff"/><text x="198" y="239" text-anchor="middle" class="g">K⁺</text>
+  </g>
+  <circle cx="296" cy="187" r="22" fill="#fff"/><text x="296" y="194" text-anchor="middle" class="o" font-size="20">K⁺</text>
+</g>
+<path id="pot-heart" pathLength="1" class="stroke orange draw" d="M84 316H112l11-16 12 31 13-22 7 7h28"/>
+<circle id="pot-beacon" class="reveal" cx="132" cy="316" r="9" fill="#c87945"/>
+<ellipse id="pot-target" class="reveal" cx="604" cy="210" rx="88" ry="38" fill="none" stroke="#087b5c" stroke-width="3" stroke-dasharray="6 7"/>
+<text id="pot-calcium" class="o reveal" x="195" y="322" font-size="20">Calcium protects the heart</text>
+<path id="pot-shift" pathLength="1" class="stroke green draw" marker-end="url(#pot-arrow)" d="M359 196Q414 167 501 196"/>
+<text id="pot-insulin" class="g reveal" x="432" y="160" text-anchor="middle" font-size="19">Insulin</text>
+<g id="pot-final" class="reveal"><rect x="121" y="357" width="578" height="57" rx="12" fill="#e4f5eb" stroke="#badfcd"/><text x="410" y="393" text-anchor="middle" class="g" font-size="25">Shifted into cells ≠ removed</text></g>
+</svg>
+<svg class="board" id="airway-board" viewBox="0 0 820 450" role="img" aria-labelledby="airway-title" hidden>
+<title id="airway-title">Anaphylaxis: airway swelling and falling blood pressure</title>
+<defs><marker id="air-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M2 1 8 5 2 9" fill="none" stroke="#a85a2c" stroke-width="2"/></marker></defs>
+<text x="61" y="62" font-size="36" class="g">Why it’s more than a rash</text><path id="air-underline" pathLength="1" d="M62 76Q322 82 521 74" class="stroke green draw"/>
+<g id="air-layout" class="reveal">
+  <rect x="90" y="111" width="273" height="186" rx="24" fill="#e7f5ec" stroke="#b9d9c9" stroke-width="2"/>
+  <rect x="457" y="111" width="273" height="186" rx="24" fill="#fff0e9" stroke="#efcabc" stroke-width="2"/>
+  <text x="226" y="146" font-size="21" text-anchor="middle" class="g">Open airway</text>
+  <text x="593" y="146" font-size="21" text-anchor="middle" class="o">Swollen airway</text>
+</g>
+<path id="air-outline" pathLength="1" d="M90 268V135q0-24 24-24h225q24 0 24 24v138q0 24-24 24H114q-24 0-24-24 M457 268V135q0-24 24-24h225q24 0 24 24v138q0 24-24 24H481q-24 0-24-24" class="stroke green draw" opacity=".75"/>
+<g id="air-normal" class="reveal">
+  <circle cx="226" cy="219" r="55" fill="#aad8c0"/><circle cx="226" cy="219" r="35" fill="#fff" stroke="#84bc9f" stroke-width="2"/>
+  <text x="226" y="225" text-anchor="middle" font-size="17" class="g">Air</text>
+</g>
+<g id="air-swollen" class="reveal"><circle cx="593" cy="219" r="55" fill="#edb59c"/><circle id="air-opening" cx="593" cy="219" r="35" fill="#fff" stroke="#d58e72" stroke-width="2"/></g>
+<circle id="airflow-dot" class="reveal" cx="226" cy="219" r="7" fill="#31a881"/>
+<circle id="airflow-tight" class="reveal" cx="593" cy="219" r="5" fill="#c87945"/>
+<path id="air-link" pathLength="1" class="stroke orange draw" marker-end="url(#air-arrow)" d="M380 220Q410 208 442 220"/>
+<g id="air-pressure" class="reveal"><text x="172" y="340" class="o" font-size="22">Blood pressure can drop</text></g>
+<path id="air-drop" pathLength="1" class="stroke orange draw" marker-end="url(#air-arrow)" d="M467 311h42l19 9 44 2 48 22"/>
+<g id="air-final" class="reveal"><rect x="118" y="362" width="584" height="56" rx="12" fill="#e4f5eb" stroke="#badfcd"/><text x="410" y="398" text-anchor="middle" class="g" font-size="24">Anaphylaxis is an emergency</text></g>
+</svg>
+<section class="welcome" id="welcome" aria-labelledby="welcome-title">
+<span class="small">Office hours · Scripted demo</span>
+<h1 id="welcome-title">EXCUSE ME???</h1>
+<label class="scene-label" for="scene-picker">Choose a take</label><select id="scene-picker"><option value="0">01 · EXCUSE ME???</option><option value="1">02 · Eat the Patient</option></select>
+<p id="intro">An acronym takes this nursing cold call in a very different direction.</p>
+<div class="welcome-actions"><button id="start" class="primary">Start lesson</button><button id="auto" class="quiet">Play full demo</button></div>
+<p class="note">EXCUSE ME??? uses your approved Jessica recording. Drawings begin 1.5 seconds into the tutor reply. Eat the Patient’s drawing starts 2 seconds after the tutor response begins.</p>
+</section>
+</main>
+<footer>
+<div id="caption" class="caption" aria-live="polite"><div><span class="who">Visual Tutor</span>Ready when you are.</div></div>
+<div class="dock">
+<div class="avatar" id="avatar" aria-label="Professor Helena"><img src="/simulations/media/image-4a431039cc7f.webp" alt=""></div>
+<button class="icon" id="pause-btn" disabled aria-label="Pause lesson"><svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><use href="#pause"/></svg></button>
+<button class="icon" id="audio-btn" aria-label="Mute tutor"><svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><use href="#volume"/></svg></button>
+<div id="talk" class="talk-area">Your line will appear here.</div>
+<button class="pill" id="replay" hidden>Replay</button>
+<button class="icon mic" id="mic-btn" disabled aria-label="Reveal your line"><svg fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><use href="#mic"/></svg></button>
+</div>
+<div class="dock-meta"><span class="demo">Scripted demo</span><div class="dots" id="dots" aria-label="Lesson progress"><i></i><i></i><i></i></div><span class="keyboard"><kbd class="key">Space</kbd> reveal / continue</span><button class="link" id="script">Transcript</button></div>
+</footer>
+</div>
+<dialog id="transcript"><header><h2>Recording script</h2><button class="pill" id="close">Close</button></header><ol id="lines"></ol><p>In manual mode, press Space to reveal your line. Read it aloud, then press Space again to cue the tutor. You can also tap the mic button. The demo does not capture your voice. Helena’s dialogue uses a substitute voice in this preview.</p></dialog>
+<script>
+const scenes = [{"title":"EXCUSE ME???","subject":"Potassium · Nursing quiz","intro":"An acronym takes this nursing cold call in a very different direction.","tutor":[["Quick! Give the patient DICK now!"],["Okay, I walked into that one. It's a mnemonic. We're talking about high potassium.","See that heartbeat? Calcium helps protect the heart, but it doesn't lower potassium.","Now watch these little dots. Insulin moves potassium out of the blood and into cells."],["Nope. Same potassium, different room. Look: it's still right there inside the cell.","Shifting it buys time. Removing it from the body is a separate step. Moving out of one room isn't the same as leaving the building."]],"creator":["EXCUSE ME???","Wait, so the potassium's gone?"],"stages":[[0,1],[0,0.31,0.65,1],[0,0.55,1]],"final":"Moving potassium into cells does not remove it from the body.","audio":[{"starts":[0],"duration":2.65,"src":"/simulations/media/audio-2fe5cd8050bd.mp3"},{"starts":[0,6.01,11.69],"duration":17.55,"src":"/simulations/media/audio-fc551f6c110e.mp3"},{"starts":[0,6.8],"duration":14.489999999999998,"src":"/simulations/media/audio-e2f68ae153e1.mp3"}]},{"title":"Eat the Patient","subject":"Anaphylaxis · Nursing quiz","intro":"An outrageous cold open turns into a lesson on severe allergic reactions.","tutor":[["Quick, eat the patient's ass!"],["The mnemonic. I meant the mnemonic. We're looking at a severe allergic reaction.","See the open airway on the left? There's room for air to move through.","Now watch the one on the right. The tissue swells inward, and that opening gets smaller.","Exactly. And breathing isn't the only thing on the line. Look at the pressure trace.","Blood pressure can drop fast. That's why anaphylaxis is an emergency, even if a rash is the first thing you notice."]],"creator":["What the—excuse me?"],"stages":[[0,1],[0.0,0.1,0.25,0.64,0.82,1.0]],"final":"Anaphylaxis can affect both breathing and circulation.","audio":[{"starts":[0.0],"duration":2.395,"src":"/simulations/media/audio-77b65d2ee422.mp3"},{"starts":[0.0,3.838,6.804,10.840816,16.686816],"duration":21.916735,"src":"/simulations/media/audio-3c43fa36d6ac.mp3"}]}];
+let sceneIndex = 0;
+let scene = scenes[0];
+const $ = id => document.getElementById(id);
+const audio = new Audio(); audio.preload = 'auto';
+const state = {step:0, phase:'idle', auto:false, muted:false, speed:1, paused:false, elapsed:0, last:0, duration:1, playable:false, generation:0};
+const clamp = n => Math.min(1, Math.max(0,n));
+const show = (id, yes) => $(id).classList.toggle('show', !!yes);
+function draw(id, p) {
+  const el = $(id);
+  el.style.opacity = p > 0 ? 1 : 0;
+  el.style.strokeDashoffset = 1-clamp(p);
+  if (el.dataset.marker === undefined) el.dataset.marker = el.getAttribute('marker-end') || '';
+  if(el.dataset.marker) el.setAttribute('marker-end',p >= 1 ? el.dataset.marker : 'none');
+}
+function board(step, p) {
+  const at = (s,a,b) => step > s ? 1 : step < s ? 0 : clamp((p-a)/(b-a));
+  if(sceneIndex===0){
+    if(!state.boardUnlocked){step=0; p=0;}
+    draw('pot-underline',at(0,0,.18));
+    draw('pot-outline',at(0,0,.75)); show('pot-layout',at(0,.44,.5)>0);
+    show('pot-ions',at(0,.36,.45)>0);
+    draw('pot-heart',at(0,0,.64)); show('pot-beacon',step===0&&p>.10);
+    show('pot-calcium',at(1,.37,.62)>0);
+    const shift=at(1,.65,.98);
+    draw('pot-shift',at(1,.65,.86)); show('pot-insulin',shift>.10);
+    $('ions-moving').setAttribute('transform','translate('+440*shift+' '+(-8*shift)+')');
+    show('pot-target',at(2,.03,.22)>0);
+    show('pot-final',at(2,.56,.83)>0);
+  }else{
+    draw('air-underline',at(0,0,.18)); draw('air-outline',at(0,0,.75));
+    show('air-layout',at(0,.34,.47)>0); show('air-normal',at(0,.13,.18)>0); show('air-swollen',at(0,.21,.26)>0);
+    const swell=at(1,.60,.97);
+    $('air-opening').setAttribute('r',35-24*swell);
+    show('airflow-dot',at(0,.22,.29)>0);
+    show('airflow-tight',at(1,.62,.70)>0);
+    draw('air-link',at(1,.58,.85));
+    draw('air-drop',at(2,.05,.44)); show('air-pressure',at(2,.08,.25)>0);
+    show('air-final',at(2,.56,.82)>0);
+  }
+
+
+}
+function caption(who, line) {
+  const key = who+'|'+line;
+  if ($('caption').dataset.key === key) return;
+  $('caption').dataset.key = key;
+  const div = document.createElement('div'), label = document.createElement('span');
+  label.className = 'who'; label.textContent = who;
+  div.append(label,document.createTextNode(line));
+  $('caption').replaceChildren(div);
+}
+function useIcon(id, symbol){$(id).querySelector('use').setAttribute('href','#'+symbol);}
+function render(){
+  const s=state, phase=s.phase, waiting=phase==='turn', listening=phase==='listen', speech=phase==='speech';
+  document.getElementById('lesson-app').classList.toggle('running',phase!=='idle'&&phase!=='done'&&!s.paused);
+  $('avatar').classList.toggle('talking',speech && !s.paused);
+  $('replay').hidden = phase!=='done';
+  $('mic-btn').hidden = phase==='done';
+  $('mic-btn').disabled = !(waiting || listening) || s.auto;
+  $('mic-btn').classList.toggle('record', listening);
+  $('mic-btn').setAttribute('aria-label', listening ? 'Continue to tutor response' : 'Reveal your line');
+  $('pause-btn').disabled = !(speech || s.auto && (waiting || listening));
+  useIcon('pause-btn',s.paused?'play':'pause');
+  $('pause-btn').setAttribute('aria-label',s.paused?'Resume lesson':'Pause lesson');
+  $('talk').innerHTML = listening ? '<span class="waves"><i></i><i></i><i></i></span><strong>Your turn</strong> · '+(s.auto?'Demo response':'Space or mic to continue') : waiting ? '<strong>Your turn</strong> · '+(s.auto?'Get ready':'Space or mic to reveal') : speech ? '<strong>Professor Helena</strong> · '+(s.paused?'Paused':'Speaking') : phase==='done' ? '<strong>Lesson complete</strong> · Replay for another take' : 'Your line will appear here.';
+  $('dots').querySelectorAll('i').forEach((el,i)=>el.classList.toggle('on',phase!=='idle'&&i<=s.step));
+}
+function speak(step){
+  const gen=++state.generation;
+  Object.assign(state,{step,phase:'speech',elapsed:0,duration:scene.audio[step].duration,playable:false,last:performance.now()});
+  audio.src=scene.audio[step].src; audio.playbackRate=state.speed; audio.muted=state.muted;
+  audio.play().then(()=>{
+    if(gen!==state.generation)return;
+    state.playable=true;
+    if(state.paused)audio.pause();
+  }).catch(()=>{});
+  render();
+}
+function finish(){
+  ++state.generation; audio.pause(); state.paused=false;
+  state.phase='done'; board(2,1);
+  caption('Lesson complete',scene.final);
+  render();
+}
+function start(auto){
+  state.auto=auto; state.paused=false; state.boardUnlocked=false;
+  $('welcome').hidden=true; state.openingProgress=.012; board(0,state.openingProgress); speak(0);
+}
+function revealCreatorLine(){
+  state.phase='listen'; state.elapsed=0;
+  if(sceneIndex===0&&state.step===0){
+    state.boardUnlocked=false;
+    board(0,0);
+  }
+  caption('Your line',scene.creator[state.step]);
+  render();
+}
+function mic(){
+  if(state.auto)return;
+  if(state.phase==='turn'){
+    revealCreatorLine();
+  }else if(state.phase==='listen'){ speak(state.step+1); }
+}
+function tick(now){
+  const s=state, dt=Math.max(0,(now-(s.last||now))/1000);
+  s.last=now;
+  if(!s.paused){
+    if(s.phase==='speech'){
+      s.elapsed+=dt*s.speed;
+      const time=s.playable&&!audio.ended?audio.currentTime:s.elapsed;
+      const { starts, duration }=scene.audio[s.step];
+      const drawingDelay=sceneIndex===0 && s.step===1 ? 1.5 : sceneIndex===1 && s.step===1 ? 2 : 0;
+      const drawingRate=1.08;
+      const drawingTime=Math.max(0,time-drawingDelay)/drawingRate;
+      let beat=starts.findIndex(start=>start>drawingTime)-1;
+      if(beat<0)beat=starts.length-1;
+      const fraction=clamp((drawingTime-starts[beat])/((starts[beat+1]??duration)-starts[beat]));
+      // Align each part of the drawing to the matching recorded line.
+      const stages=scene.stages[s.step];
+      const progress=stages[beat]+fraction*(stages[beat+1]-stages[beat]);
+      if(s.step===0)s.openingProgress=Math.max(s.openingProgress,progress,Math.min(.16,s.elapsed/duration));
+      if(sceneIndex===0 && s.step===1){
+        s.boardUnlocked=time>=drawingDelay;
+        if(time<drawingDelay) board(0,0);
+        else if(drawingTime<3) board(0,clamp(drawingTime/3));
+        else board(1,progress);
+      } else if(sceneIndex===1 && s.step===1){
+        if(time<drawingDelay) board(0,0);
+        else if(beat<2) board(0,progress);
+        else if(beat<3) board(1,progress);
+        else board(2,clamp((progress-.64)/.36));
+      } else board(s.step,s.step===0?s.openingProgress:progress);
+      caption('Professor Helena',scene.tutor[s.step][beat]);
+      const audioFinished=s.playable?audio.ended:time>=duration;
+      const animationFinished=s.elapsed>=drawingDelay+duration*drawingRate;
+      if(audioFinished&&animationFinished){
+        board(s.step,1);
+        if(s.step>=scene.audio.length-1)finish();
+        else{
+          s.phase='turn'; s.elapsed=0;
+          caption('Your turn',s.auto?'Get ready for your line.':'Press Space or tap the mic to reveal your line.');
+          render();
+        }
+      }
+    }else if(s.auto && s.phase==='turn'){
+      s.elapsed+=dt*s.speed;
+      if(s.elapsed>.65){revealCreatorLine();}
+    }else if(s.phase==='listen'){
+      if(sceneIndex===0&&s.step===0){
+        board(0,0);
+      }
+      if(s.auto){
+        s.elapsed+=dt*s.speed;
+        if(s.elapsed>3.6)speak(s.step+1);
+      }
+    }
+  }
+}
+$('replay').onclick=()=>start(state.auto);
+$('start').onclick=()=>start(false); $('auto').onclick=()=>start(true); $('mic-btn').onclick=mic;
+$('end').onclick=()=>{
+  ++state.generation; audio.pause(); Object.assign(state,{phase:'idle',step:0,paused:false,auto:false,boardUnlocked:false});
+  board(0,0); caption('Visual Tutor','Ready when you are.');
+  $('welcome').hidden=false; $('welcome-title').textContent=scene.title; $('intro').textContent=scene.intro; $('start').textContent='Start lesson'; render();
+};
+$('end').setAttribute('aria-label','End lesson');
+$('pause-btn').onclick=()=>{
+  state.paused=!state.paused;
+  if(state.paused)audio.pause();
+  else if(state.phase==='speech'&&state.playable)audio.play().catch(()=>{state.playable=false;});
+  render();
+};
+$('audio-btn').onclick=()=>{
+  state.muted=!state.muted; audio.muted=state.muted;
+  useIcon('audio-btn',state.muted?'mute':'volume');
+  $('audio-btn').setAttribute('aria-label',state.muted?'Unmute tutor':'Mute tutor');
+};
+$('speed').onclick=()=>{
+  state.speed=state.speed===1?1.25:state.speed===1.25?1.5:1; audio.playbackRate=state.speed; $('speed').textContent=state.speed+'× Speed';
+};
+$('full').hidden=!document.fullscreenEnabled;
+$('full').onclick=()=> (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen()).catch(()=>{});
+$('script').onclick=()=>$('transcript').showModal(); $('close').onclick=()=>$('transcript').close();
+function selectScene(index) {
+  sceneIndex=index; scene=scenes[index];
+  $('potassium-board').toggleAttribute('hidden',index!==0); $('airway-board').toggleAttribute('hidden',index!==1);
+  $('subject').textContent=scene.subject; $('welcome-title').textContent=scene.title; $('intro').textContent=scene.intro; document.title=scene.title+' · StudySim Visual Tutor';
+  $('lines').replaceChildren();
+  scene.tutor.forEach((parts,i)=>{
+    for(const [name,text] of [['Professor Helena',parts.join(' ')],...(scene.creator[i]?[['You',scene.creator[i]]]:[])]){
+      const li=document.createElement('li'), strong=document.createElement('strong');
+      strong.textContent=name+': ';li.append(strong,document.createTextNode(text));$('lines').append(li);
+    }
+  });
+  state.boardUnlocked=false;
+  board(0,0); render();
+}
+$('scene-picker').onchange=()=>selectScene(Number($('scene-picker').value));
+const requestedTake = new URLSearchParams(location.search).get('take');
+const requestedScene = requestedTake === 'eat-the-patient' ? 1 : requestedTake === 'excuse-me' ? 0 : null;
+if(requestedScene !== null){
+  $('scene-picker').hidden=true;
+  document.querySelector('label[for="scene-picker"]').hidden=true;
+  $('scene-picker').value=String(requestedScene);
+  selectScene(requestedScene);
+}else selectScene(0);
+document.addEventListener('keydown',e=>{
+  if(e.code!=='Space'||e.defaultPrevented||e.altKey||e.ctrlKey||e.metaKey||$('transcript').open||$('mic-btn').disabled)return;
+  if(e.target instanceof HTMLElement && (e.target.isContentEditable || e.target.closest('input,textarea,select')))return;
+  e.preventDefault();
+  if(!e.repeat)mic();
+});
+board(0,0);render();setInterval(()=>tick(performance.now()), 32);
+</script>
+</body>
+</html>
