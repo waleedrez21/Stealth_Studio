@@ -18,7 +18,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <div className="side-label">CREATOR WORKSPACE</div>
         <a className={drafts || ideas || archive || simulations ? 'nav' : 'nav active'} href="/">
           <Files size={19} />
-          Scripts{!drafts && !ideas && !archive && <span className="nav-marker" />}
+          Scripts{!drafts && !ideas && !archive && !simulations && <span className="nav-marker" />}
         </a>
         <a className={simulations ? 'nav active' : 'nav'} href="/simulations">
           <Play size={19} />
