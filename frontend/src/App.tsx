@@ -7,7 +7,7 @@ import { selectedFolder, folderId, subfolderId, folderHref, scriptFolderName } f
 import RichContent from './RichContent';
 import { plainText } from './rich-text.js';
 import { useEffect, useState, lazy, Suspense } from 'react';
-import { FileText, CalendarDays, FilePenLine, Pin } from 'lucide-react';
+import { FileText, CalendarDays, FilePenLine, Pin, Play, HeartPulse, Activity } from 'lucide-react';
 import Shell from './Shell';
 import { api } from './api';
 import { samples, dateLabel, type Script } from './data';
@@ -207,6 +207,57 @@ function Library() {
           </div>
         </>
       ) : null}
+      <div className="library-footer">
+        <span className="line" />
+        <span>Made by Waleed Shammarez</span>
+        <span className="line" />
+      </div>
+    </main>
+  );
+}
+function Simulations() {
+  const options = [
+    {
+      title: 'EXCUSE ME???',
+      subtitle: 'The potassium cold call',
+      description: 'A chaotic nursing-class opener turns into a visual lesson on shifting potassium into cells versus removing it from the body.',
+      href: '/simulations/studysim-tutor.html?take=excuse-me',
+      Icon: Activity,
+      number: '01',
+    },
+    {
+      title: 'Eat the Patient',
+      subtitle: 'The anaphylaxis cold call',
+      description: 'A wild mnemonic cold open leads into an animated walkthrough of airway swelling and falling blood pressure.',
+      href: '/simulations/studysim-tutor.html?take=eat-the-patient',
+      Icon: HeartPulse,
+      number: '02',
+    },
+  ];
+  return (
+    <main className="library simulations-page">
+      <div className="page-heading">
+        <div>
+          <div className="eyebrow">STUDYSIM · INTERACTIVE DEMOS</div>
+          <h1>Choose a simulation.</h1>
+          <p>Open a creator-led tutor simulation and follow the visuals as the lesson plays.</p>
+        </div>
+        <span className="count">2 simulations</span>
+      </div>
+      <div className="simulation-grid">
+        {options.map(({ title, subtitle, description, href, Icon, number }) => (
+          <a className="simulation-card" href={href} key={title}>
+            <div className="simulation-card-top">
+              <span className="simulation-number">{number}</span>
+              <span className="simulation-icon"><Icon size={22} /></span>
+            </div>
+            <div className="simulation-kicker">{subtitle}</div>
+            <h2>{title}</h2>
+            <p>{description}</p>
+            <span className="simulation-launch"><Play size={16} fill="currentColor" /> Open simulation</span>
+          </a>
+        ))}
+      </div>
       <div className="library-footer">
         <span className="line" />
         <span>Made by Waleed Shammarez</span>
@@ -458,6 +509,7 @@ export default function App() {
   let page: React.ReactNode;
   if (path === '/') page = <Library />;
   else if (path === '/drafts') page = <Drafts />;
+  else if (path === '/simulations') page = <Simulations />;
   else if (path === '/archive') page = <ArchiveLibrary />;
   else if (path === '/ideas')
     page = (

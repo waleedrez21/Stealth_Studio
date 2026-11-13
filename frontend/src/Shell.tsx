@@ -1,10 +1,11 @@
-import { Files, FilePenLine, Plus, LockKeyhole, Video, Archive } from 'lucide-react';
+import { Files, FilePenLine, Plus, LockKeyhole, Video, Archive, Play } from 'lucide-react';
 import { useSession } from './session';
 export default function Shell({ children }: { children: React.ReactNode }) {
   const { user, coach, logout } = useSession();
   const drafts = location.pathname.startsWith('/drafts');
   const archive = location.pathname.startsWith('/archive');
   const ideas = location.pathname.startsWith('/ideas');
+  const simulations = location.pathname.startsWith('/simulations');
   return (
     <div className="shell">
       <aside className="sidebar">
@@ -15,9 +16,13 @@ export default function Shell({ children }: { children: React.ReactNode }) {
           Stealth Studio
         </a>
         <div className="side-label">CREATOR WORKSPACE</div>
-        <a className={drafts || ideas || archive ? 'nav' : 'nav active'} href="/">
+        <a className={drafts || ideas || archive || simulations ? 'nav' : 'nav active'} href="/">
           <Files size={19} />
           Scripts{!drafts && !ideas && !archive && <span className="nav-marker" />}
+        </a>
+        <a className={simulations ? 'nav active' : 'nav'} href="/simulations">
+          <Play size={19} />
+          Simulations{simulations && <span className="nav-marker" />}
         </a>
         <a className={drafts ? 'nav active' : 'nav'} href="/drafts">
           <FilePenLine size={19} />
@@ -47,7 +52,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
         <header className="topbar">
           <span className="breadcrumb">
             Workspace <span>/</span>
-            <strong>{archive ? 'Archive' : ideas ? 'Potential videos' : drafts ? 'Drafts' : 'Scripts'}</strong>
+            <strong>{archive ? 'Archive' : ideas ? 'Potential videos' : drafts ? 'Drafts' : simulations ? 'Simulations' : 'Scripts'}</strong>
           </span>
           <div className="header-actions">
             {user && (
