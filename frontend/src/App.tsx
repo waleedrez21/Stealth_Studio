@@ -233,6 +233,14 @@ function Simulations() {
       Icon: HeartPulse,
       number: '02',
     },
+    {
+      title: 'QUICK FINGER THE PATIENT',
+      subtitle: 'The capillary-refill cold call',
+      description: 'A chaotic bedside instruction turns into a quick visual lesson on capillary refill and peripheral perfusion.',
+      href: '/simulations/studysim-tutor.html?take=quick-finger',
+      Icon: Activity,
+      number: '03',
+    },
   ];
   return (
     <main className="library simulations-page">
@@ -242,7 +250,7 @@ function Simulations() {
           <h1>Choose a simulation.</h1>
           <p>Open a creator-led tutor simulation and follow the visuals as the lesson plays.</p>
         </div>
-        <span className="count">2 simulations</span>
+        <span className="count">{options.length} simulations</span>
       </div>
       <div className="simulation-grid">
         {options.map(({ title, subtitle, description, href, Icon, number }) => (
