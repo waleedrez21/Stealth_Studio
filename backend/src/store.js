@@ -1,6 +1,6 @@
 import { randomUUID, createHash } from 'node:crypto';
 import { nextRecord, assertRevision, imageIds } from './validation.js';
-import { normalizeFolderDescription, studySimDescription } from './folder-guidance.js';
+import { normalizeFolderDescription, studySimDescription, simulationsDescription } from './folder-guidance.js';
 
 export function firestoreStore(db, bucket) {
   const scripts = db.collection('scripts');
@@ -26,7 +26,7 @@ export function firestoreStore(db, bucket) {
     async getFolderDescription(folder = 'study-sim') {
       const snap = await folderDescriptions.doc(folder).get();
       const value = snap.exists ? snap.data() : null;
-      return { description: normalizeFolderDescription(folder, value?.description ?? (folder === 'study-sim' ? studySimDescription : '')), revision: value?.revision ?? 0 };
+      return { description: normalizeFolderDescription(folder, value?.description ?? (folder === 'study-sim' ? studySimDescription : folder === 'simulations' ? simulationsDescription : '')), revision: value?.revision ?? 0 };
     },
     async saveFolderDescription(input, user, folder = 'study-sim') {
       return db.runTransaction(async (tx) => {

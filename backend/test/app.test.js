@@ -934,12 +934,12 @@ test('Study Sim folder descriptions are public, shared, validated and protected 
 
 test('every folder and subfolder has independent coach-editable descriptions without changing Study Sim', async (t) => {
   const { call } = await server(t);
-  const ids = ['first-10','engagement','study-sim','general','general--stealthgpt','general--humanchatgpt','general--affiliate-scripts'];
+  const ids = ['first-10','engagement','study-sim','general','general--stealthgpt','general--humanchatgpt','general--affiliate-scripts','simulations'];
   const studyPath = '/api/folders/study-sim/description';
   await call(studyPath,{token:'a',method:'PATCH',body:{description:'Keep Josh’s existing description',revision:0}});
   for (const id of ids.filter(id=>id!=='study-sim')) {
     const path='/api/folders/'+id+'/description';
-    assert.deepEqual((await call(path)).data,{description:'',revision:0});
+    assert.deepEqual((await call(path)).data,id==='simulations'?{description:'Start on camera with the hook. Press Space to reveal the creator’s line, then turn to the tutor simulation and record the animated lesson as it draws. End on the takeaway, keep the cuts quick, and make the StudySim branding visible. Use the linked videos as framing and pacing inspiration.',revision:0}:{description:'',revision:0});
     assert.equal((await call(path,{token:'outsider',method:'PATCH',body:{description:'No',revision:0}})).status,403);
     const result=await call(path,{token:'b',method:'PATCH',body:{description:'Guidance for '+id,revision:0}});
     assert.equal(result.status,200);

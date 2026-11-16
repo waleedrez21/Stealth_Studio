@@ -2,7 +2,7 @@ import { cardSummary } from './sections';
 import ScriptText from './ScriptText';
 import ReferenceVideos from './ReferenceVideos';
 import FolderNav from './FolderNav';
-import FolderDescription from './FolderDescription';
+import FolderDescription, { SimulationDescription } from './FolderDescription';
 import { selectedFolder, folderId, subfolderId, folderHref, scriptFolderName } from './folders';
 import RichContent from './RichContent';
 import { plainText } from './rich-text.js';
@@ -224,6 +224,7 @@ function Simulations() {
       href: '/simulations/studysim-tutor.html?take=excuse-me',
       Icon: Activity,
       number: '01',
+      references: [{ label: 'Video inspiration · Creator delivery', url: 'https://www.tiktok.com/@tristentalkstips/video/7693627355075497236?is_from_webapp=1&sender_device=pc&web_id=7601324424528561665' }],
     },
     {
       title: 'Eat the Patient',
@@ -232,6 +233,7 @@ function Simulations() {
       href: '/simulations/studysim-tutor.html?take=eat-the-patient',
       Icon: HeartPulse,
       number: '02',
+      references: [{ label: 'Video inspiration · Creator delivery', url: 'https://www.tiktok.com/@mia.offrecord/video/7686987281701391629?is_from_webapp=1&sender_device=pc&web_id=7601324424528561665' }],
     },
     {
       title: 'QUICK FINGER THE PATIENT',
@@ -240,6 +242,11 @@ function Simulations() {
       href: '/simulations/studysim-tutor.html?take=quick-finger',
       Icon: Activity,
       number: '03',
+      references: [
+        { label: 'StudySim format inspiration 1', url: 'https://www.instagram.com/reels/DdcYmFFSMLW/' },
+        { label: 'StudySim format inspiration 2', url: 'https://www.instagram.com/reels/DeKcw9sNe4U/' },
+        { label: 'StudySim format inspiration 3', url: 'https://www.instagram.com/reels/DdcBc2Dv6Pz/' },
+      ],
     },
   ];
   return (
@@ -252,9 +259,10 @@ function Simulations() {
         </div>
         <span className="count">{options.length} simulations</span>
       </div>
+      <SimulationDescription />
       <div className="simulation-grid">
-        {options.map(({ title, subtitle, description, href, Icon, number }) => (
-          <a className="simulation-card" href={href} key={title}>
+        {options.map(({ title, subtitle, description, href, Icon, number, references }) => (
+          <article className="simulation-card" key={title}>
             <div className="simulation-card-top">
               <span className="simulation-number">{number}</span>
               <span className="simulation-icon"><Icon size={22} /></span>
@@ -262,8 +270,9 @@ function Simulations() {
             <div className="simulation-kicker">{subtitle}</div>
             <h2>{title}</h2>
             <p>{description}</p>
-            <span className="simulation-launch"><Play size={16} fill="currentColor" /> Open simulation</span>
-          </a>
+            <ReferenceVideos references={references} />
+            <a className="simulation-launch" href={href}><Play size={16} fill="currentColor" /> Open simulation</a>
+          </article>
         ))}
       </div>
       <div className="library-footer">
