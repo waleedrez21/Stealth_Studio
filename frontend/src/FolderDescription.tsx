@@ -53,7 +53,7 @@ function DescriptionPanel({ id, name, editable }: { id: string; name: string; ed
 
   if (!isStudySim && !value.description && !(editable && coach)) return null;
   return <aside className="study-sim-guidance" aria-label={`${name} guidance`}>
-    <strong>{isStudySim ? 'StudySim only' : 'Folder description'}</strong>
+    <strong>{isStudySim ? 'StudySim only' : name === 'Simulations' ? 'Simulation guide' : 'Folder description'}</strong>
     {isStudySim && <p>Use these scripts to promote StudySim, not StealthGPT.</p>}
     {editing && coach ? <div className="folder-description-editor">
       <label htmlFor={labelId}>Short folder description</label>
@@ -74,4 +74,9 @@ function DescriptionPanel({ id, name, editable }: { id: string; name: string; ed
       }}>Reload description</button>
     </div>}
   </aside>;
+}
+
+
+export function SimulationDescription() {
+  return <DescriptionPanel key="simulations" id="simulations" name="Simulations" editable />;
 }
